@@ -1,8 +1,9 @@
 package com.example.demo;
 
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.Map;
 
 @RestController
 public class HelloController {
@@ -11,7 +12,7 @@ public class HelloController {
     public Map<String, Object> hello() {
         return Map.of(
             "message", "Hello from Spring Boot in Docker!",
-            "status", "ok"
+            "status", "ta de boa"
         );
     }
 
