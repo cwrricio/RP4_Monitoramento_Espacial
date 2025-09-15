@@ -1,27 +1,25 @@
 services:
   app:
     build: .
-    container_name: spring-app
+    container_name: monitoramento-espacial-app # Nome do container atualizado
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: "prod"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/appdb"
-      SPRING_DATASOURCE_USERNAME: "app"
-      SPRING_DATASOURCE_PASSWORD: "app"
-      # opcional: mostrar SQL no log
-      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/monitoramento_db" # Nome do DB atualizado
+      SPRING_DATASOURCE_USERNAME: "user" # Usuário mais genérico
+      SPRING_DATASOURCE_PASSWORD: "password" # Senha mais genérica
       SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
     depends_on:
       - db
 
   db:
     image: postgres:16-alpine
-    container_name: spring-db
+    container_name: monitoramento-db # Nome do container atualizado
     environment:
-      POSTGRES_DB: "appdb"
-      POSTGRES_USER: "app"
-      POSTGRES_PASSWORD: "app"
+      POSTGRES_DB: "monitoramento_db" # Nome do DB atualizado
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "password"
     ports:
       - "5432:5432"
     volumes:
