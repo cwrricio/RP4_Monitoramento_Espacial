@@ -1,4 +1,4 @@
-target/
+.target/
 .build/
 .gradle/
 out/
@@ -6,6 +6,7 @@ out/
 .gitignore
 .idea
 .vscode
+
 *.iml
 Dockerfile
 README.md

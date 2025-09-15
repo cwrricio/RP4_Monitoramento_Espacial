@@ -1,0 +1,7 @@
+.vscode
+./target
+./build
+./.gradle       
+/out
+git# Ignora todos os arquivos .class em qualquer pasta
+*.class
