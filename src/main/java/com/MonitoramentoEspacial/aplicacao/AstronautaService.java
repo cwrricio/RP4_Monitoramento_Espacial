@@ -30,6 +30,18 @@ public class AstronautaService {
         return AstronautaMapper.toDTO(astronauta);
     }
 
+    public List<AstronautaDTO> buscarPorNome(String nome) {
+        return repository.findByNomeContainingIgnoreCase(nome).stream()
+                .map(AstronautaMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<AstronautaDTO> buscarPorNivelAptidao(String nivel) {
+        return repository.findByNivelAptidaoMedica(nivel).stream()
+                .map(AstronautaMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
     public AstronautaDTO criarAstronauta(AtualizaAstronautaRequest request) {
         Astronauta astronauta = AstronautaMapper.fromRequest(request);
         repository.save(astronauta);
@@ -42,5 +54,11 @@ public class AstronautaService {
         astronauta.atualizarDados(request.getNome(), request.getNivelAptidaoMedica());
         repository.save(astronauta);
         return AstronautaMapper.toDTO(astronauta);
+    }
+
+    public void deletarAstronauta(Long id) {
+        Astronauta astronauta = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Astronauta não encontrado"));
+        repository.delete(astronauta);
     }
 }

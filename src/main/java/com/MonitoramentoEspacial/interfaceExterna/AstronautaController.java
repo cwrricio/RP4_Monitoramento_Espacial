@@ -1,8 +1,6 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
 import com.MonitoramentoEspacial.aplicacao.AstronautaService;
-import com.MonitoramentoEspacial.interfaceExterna.AtualizaAstronautaRequest;
-import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +28,16 @@ public class AstronautaController {
         return ResponseEntity.ok(astronautaService.buscarPorId(id));
     }
 
+    @GetMapping("/buscar/nome/{nome}")
+    public ResponseEntity<List<AstronautaDTO>> buscarPorNome(@PathVariable String nome) {
+        return ResponseEntity.ok(astronautaService.buscarPorNome(nome));
+    }
+
+    @GetMapping("/buscar/nivel/{nivel}")
+    public ResponseEntity<List<AstronautaDTO>> buscarPorNivel(@PathVariable String nivel) {
+        return ResponseEntity.ok(astronautaService.buscarPorNivelAptidao(nivel));
+    }
+
     @PostMapping
     public ResponseEntity<AstronautaDTO> criar(@Valid @RequestBody AtualizaAstronautaRequest request) {
         AstronautaDTO dto = astronautaService.criarAstronauta(request);
@@ -40,5 +48,11 @@ public class AstronautaController {
     public ResponseEntity<AstronautaDTO> atualizar(@PathVariable Long id,
                                                    @Valid @RequestBody AtualizaAstronautaRequest request) {
         return ResponseEntity.ok(astronautaService.atualizarAstronauta(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        astronautaService.deletarAstronauta(id);
+        return ResponseEntity.noContent().build();
     }
 }
