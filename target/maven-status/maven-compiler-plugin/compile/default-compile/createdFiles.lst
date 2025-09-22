@@ -1,0 +1,11 @@
+com\example\demo\api\dto\AtualizaAstronautaRequest.class
+com\example\demo\DemoApplication.class
+com\example\demo\domain\monitoring\DadosBiometricos.class
+com\example\demo\domain\people\Astronauta.class
+com\example\demo\api\dto\AstronautaDTO.class
+com\example\demo\application\AstronautaService.class
+com\example\demo\HelloController.class
+com\example\demo\domain\people\Funcionario.class
+com\example\demo\infra\repository\AstronautaRepository.class
+com\example\demo\api\AstronautaController.class
+com\example\demo\api\dto\NovoAstronautaRequest.class
