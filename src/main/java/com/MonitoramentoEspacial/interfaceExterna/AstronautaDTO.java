@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 public class AstronautaDTO {
     private Long id;
     private String nome;
-    private String cargo;
     private Integer idade;
     private Boolean ativo;
     private String nivelAptidaoMedica;
@@ -35,7 +34,6 @@ public class AstronautaDTO {
 
     public Long getId() { return id; }
     public String getNome() { return nome; }
-    public String getCargo() { return cargo; }
     public Integer getIdade() { return idade; }
     public Boolean getAtivo() { return ativo; }
     public String getNivelAptidaoMedica() { return nivelAptidaoMedica; }

@@ -10,9 +10,6 @@ public class AtualizaAstronautaRequest {
     @Size(min = 2, max = 100)
     private String nome;
 
-    @NotBlank(message = "Cargo deve ser informado")
-    private String cargo;
-
     @NotNull(message = "Idade deve ser informada")
     private Integer idade;
 
@@ -32,9 +29,6 @@ public class AtualizaAstronautaRequest {
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
-
-    public String getCargo() { return cargo; }
-    public void setCargo(String cargo) { this.cargo = cargo; }
 
     public Integer getIdade() { return idade; }
     public void setIdade(Integer idade) { this.idade = idade; }
