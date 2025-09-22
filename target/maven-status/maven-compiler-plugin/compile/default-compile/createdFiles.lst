@@ -1,0 +1,12 @@
+com\MonitoramentoEspacial\interfaceExterna\AstronautaDTO.class
+com\MonitoramentoEspacial\testes\file.class
+com\MonitoramentoEspacial\aplicacao\dominio\Astronauta.class
+com\MonitoramentoEspacial\aplicacao\AstronautaService.class
+com\MonitoramentoEspacial\aplicacao\MonitoramentoEspacialApp.class
+com\MonitoramentoEspacial\middleware\AstronautaRepository.class
+com\MonitoramentoEspacial\interfaceExterna\AstronautaController.class
+com\MonitoramentoEspacial\aplicacao\RecursoNaoEncontradoException.class
+com\MonitoramentoEspacial\aplicacao\AstronautaMapper.class
+com\MonitoramentoEspacial\interfaceExterna\AtualizaAstronautaRequest.class
+com\MonitoramentoEspacial\aplicacao\dominio\DadosBiometricos.class
+com\MonitoramentoEspacial\aplicacao\dominio\Funcionario.class

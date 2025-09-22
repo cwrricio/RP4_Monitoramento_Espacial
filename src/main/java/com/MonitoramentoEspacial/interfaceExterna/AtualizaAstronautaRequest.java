@@ -1,7 +1,17 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+
 public class AtualizaAstronautaRequest {
+
+    @NotBlank(message = "Nome não pode ser vazio")
+    @Size(min = 2, max = 100)
     private String nome;
+
+    @NotBlank(message = "Nível de aptidão médica deve ser informado")
     private String nivelAptidaoMedica;
 
     public String getNome() { return nome; }
