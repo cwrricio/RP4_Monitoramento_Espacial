@@ -1,0 +1,10 @@
+{
+  "nome": "",
+  "idade": 15,
+  "ativo": true,
+  "nivelAptidaoMedica": "INVALIDO",
+  "missoesRealizadas": -5,
+  "tipoBiometria": "TIPO_INVALIDO",
+  "valorBiometria": "abc",
+  "unidadeBiometria": ""
+}

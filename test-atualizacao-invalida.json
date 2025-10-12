@@ -1,0 +1,10 @@
+{
+  "nome": "A",
+  "idade": 70,
+  "ativo": true,
+  "nivelAptidaoMedica": "123",
+  "missoesRealizadas": -10,
+  "tipoBiometria": "PRESSAO_ARTERIAL",
+  "valorBiometria": "não-numérico",
+  "unidadeBiometria": ""
+}
