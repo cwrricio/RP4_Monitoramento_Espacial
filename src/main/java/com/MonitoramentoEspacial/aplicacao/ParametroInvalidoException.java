@@ -2,7 +2,7 @@ package com.MonitoramentoEspacial.aplicacao;
 
 /**
  * Exceção personalizada para tratar erros de parâmetros inválidos
- * no sistema de monitoramento espacial.
+
  */
 public class ParametroInvalidoException extends RuntimeException {
 

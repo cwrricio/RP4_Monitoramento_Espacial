@@ -1,9 +1,5 @@
 package com.MonitoramentoEspacial.aplicacao;
 
-/**
- * Exceção personalizada para tratar erros de recursos não encontrados
- * no sistema de monitoramento espacial.
- */
 public class RecursoNaoEncontradoException extends RuntimeException {
 
     /**
