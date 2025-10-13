@@ -2,7 +2,6 @@ package com.MonitoramentoEspacial.aplicacao;
 
 import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.DadosBiometricos;
-import com.MonitoramentoEspacial.interfaceExterna.AtualizaAstronautaRequest;
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 
 public class AstronautaMapper {
@@ -10,6 +9,7 @@ public class AstronautaMapper {
     public static AstronautaDTO toDTO(Astronauta astronauta) {
         DadosBiometricos biometria = astronauta.getDadosBiometricos();
 
+        // Boa prática: inicializar com valores padrão para evitar NullPointerException no DTO
         String tipo = null;
         String valor = null;
         String unidade = null;
@@ -36,10 +36,4 @@ public class AstronautaMapper {
         );
     }
 
-    public static Astronauta fromRequest(AtualizaAstronautaRequest request) {
-        Astronauta astronauta = new Astronauta();
-        astronauta.setNome(request.getNome());
-        astronauta.setNivelAptidaoMedica(request.getNivelAptidaoMedica());
-        return astronauta;
-    }
 }
