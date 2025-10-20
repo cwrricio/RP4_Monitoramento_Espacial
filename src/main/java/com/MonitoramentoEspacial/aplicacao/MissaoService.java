@@ -62,4 +62,29 @@ public class MissaoService implements MissaoServiceInterface {
                 .map(MissaoMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public void deletarMissao(Long id) {
+        log.info("Tentando deletar missão ID: {}", id);
+        if (!missaoRepository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Missão não encontrada para exclusão (ID: " + id + ")");
+        }
+        missaoRepository.deleteById(id);
+        log.info("Missão ID: {} deletada com sucesso", id);
+    }
+
+    @Override
+    @Transactional
+    public MissaoDTO iniciarSimulacao(Long id) {
+        log.info("Iniciando simulação para missão ID: {}", id);
+        Missao missao = missaoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Missão não encontrada (ID: " + id + ")"));
+        
+        missao.iniciarSimulacao(); 
+        
+        Missao missaoSalva = missaoRepository.save(missao);
+        log.info("Simulação iniciada. Status da missão: {}", missaoSalva.getStatus());
+        return MissaoMapper.toDTO(missaoSalva);
+    }
 }

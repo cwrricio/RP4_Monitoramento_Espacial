@@ -39,4 +39,16 @@ public class MissaoController {
     public ResponseEntity<List<MissaoDTO>> listarTodas() {
         return ResponseEntity.ok(missaoService.listarTodas());
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        missaoService.deletarMissao(id);
+        return ResponseEntity.noContent().build(); // Resposta 204 No Content (sucesso)
+    }
+
+    @PostMapping("/{id}/iniciar-simulacao")
+    public ResponseEntity<MissaoDTO> iniciarSimulacao(@PathVariable Long id) {
+        MissaoDTO missaoAtualizada = missaoService.iniciarSimulacao(id);
+        return ResponseEntity.ok(missaoAtualizada);
+    }
 }

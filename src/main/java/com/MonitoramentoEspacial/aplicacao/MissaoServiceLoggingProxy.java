@@ -62,4 +62,29 @@ public class MissaoServiceLoggingProxy implements MissaoServiceInterface {
             throw e;
         }
     }
+
+    @Override
+    public void deletarMissao(Long id) {
+        log.info("PROXY: Entrando no método deletarMissao com o ID: {}", id);
+        try {
+            realMissaoService.deletarMissao(id);
+            log.info("PROXY: Saindo do método deletarMissao.");
+        } catch (Exception e) {
+            log.error("PROXY: Exceção capturada no método deletarMissao: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public MissaoDTO iniciarSimulacao(Long id) {
+        log.info("PROXY: Entrando no método iniciarSimulacao com o ID: {}", id);
+        try {
+            MissaoDTO resultado = realMissaoService.iniciarSimulacao(id);
+            log.info("PROXY: Saindo do método iniciarSimulacao. Missão atualizada: {}", resultado.getNome());
+            return resultado;
+        } catch (Exception e) {
+            log.error("PROXY: Exceção capturada no método iniciarSimulacao: {}", e.getMessage());
+            throw e;
+        }
+    }
 }

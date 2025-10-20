@@ -12,4 +12,8 @@ public interface MissaoServiceInterface {
     MissaoDTO buscarPorId(Long id);
 
     List<MissaoDTO> listarTodas();
+
+    void deletarMissao(Long id);
+    
+    MissaoDTO iniciarSimulacao(Long id);
 }
