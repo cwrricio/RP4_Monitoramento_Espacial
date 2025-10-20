@@ -1,6 +1,7 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
-import com.MonitoramentoEspacial.aplicacao.AstronautaService;
+// MUDANÇA 1: Importar a INTERFACE em vez da classe concreta.
+import com.MonitoramentoEspacial.aplicacao.AstronautaServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,8 +13,10 @@ import java.util.List;
 @RequestMapping("/astronautas")
 public class AstronautaController {
 
+    // MUDANÇA 2: Injetar a interface. O Spring, por causa da anotação @Primary,
+    // injetará o Proxy aqui, que por sua vez usará o serviço real.
     @Autowired
-    private AstronautaService astronautaService;
+    private AstronautaServiceInterface astronautaService;
 
     @GetMapping("/{id}")
     public ResponseEntity<AstronautaDTO> buscarPorId(@PathVariable Long id) {
