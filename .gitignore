@@ -5,3 +5,10 @@
 /out
 git# Ignora todos os arquivos .class em qualquer pasta
 *.class
+.idea/
+.DS_Store
+/node_modules
+/dist
+.env
+.env.local
+.env.development.local

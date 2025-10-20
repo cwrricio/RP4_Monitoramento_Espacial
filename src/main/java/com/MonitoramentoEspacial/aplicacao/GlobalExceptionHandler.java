@@ -1,5 +1,3 @@
-// só pra adicionar o arquivo no commit
-
 package com.MonitoramentoEspacial.aplicacao;
 
 import org.springframework.http.HttpStatus;
@@ -64,4 +62,3 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
-
