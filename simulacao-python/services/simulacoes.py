@@ -4,59 +4,65 @@ import os
 
 print("=== DEBUG DETALHADO ===")
 
-# Adiciona caminhos
+# Configurar caminhos
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.insert(0, project_root)
 
-# Importações REAIS - sem fallback para dummy
+# Importacoes
 try:
     from core.foguete import RocketSimulation
     from core.orbita import OrbitalSimulation
     
-    # Tenta importar reentrada, mas se falhar, continua com as outras
+    # Tenta importar reentrada
     try:
         from core.reentrada import ReentrySimulation
         REENTRY_AVAILABLE = True
-        print("✅ ReentrySimulation importado!")
+        print("ReentrySimulation importado!")
     except ImportError as e:
-        print(f"⚠️  ReentrySimulation não disponível: {e}")
+        print(f"ReentrySimulation nao disponivel: {e}")
         REENTRY_AVAILABLE = False
     
-    print("🎉 MÓDULOS PRINCIPAIS IMPORTADOS COM SUCESSO!")
+    print("Modulos principais importados com sucesso!")
     
 except ImportError as e:
-    print(f"❌ Erro crítico: {e}")
+    print(f"Erro critico: {e}")
     sys.exit(1)
 
 def executar_simulacao_foguete():
-    print("\n🚀 INICIANDO SIMULAÇÃO DE LANÇAMENTO DE FOGUETE")
+    print("\nINICIANDO SIMULACAO DE LANCAMENTO DE FOGUETE")
     sim = RocketSimulation()
     sim.executarSimulacao()
     if sim.processarSimulacao():
         print(sim.resultado)
+        # Salvar JSON automaticamente
+        sim.salvar_json()
         sim.criar_animacao()
     return sim
 
 def executar_simulacao_orbita():
-    print("\n🛰️ INICIANDO SIMULAÇÃO DE ÓRBITA SATELITAL")
+    print("\nINICIANDO SIMULACAO DE ORBITA SATELITAL")
     sim = OrbitalSimulation()
     sim.executarSimulacao()
     if sim.processarSimulacao():
         print(sim.resultado)
+        # Salvar JSON automaticamente
+        sim.salvar_json()
         sim.criar_animacao()
     return sim
 
 def executar_simulacao_reentrada():
     if not REENTRY_AVAILABLE:
-        print("\n❌ Simulação de Reentrada não disponível")
-        print("   Verifique o arquivo core/reentrada.py")
+        print("\nSimulacao de Reentrada nao disponivel")
+        print("Verifique o arquivo core/reentrada.py")
         return None
     
-    print("\n🔥 INICIANDO SIMULAÇÃO DE REENTRADA ATMOSFÉRICA")
+    print("\nINICIANDO SIMULACAO DE REENTRADA ATMOSFERICA")
     sim = ReentrySimulation()
     sim.executarSimulacao()
     if sim.processarSimulacao():
         print(sim.resultado)
+        # Salvar JSON automaticamente
+        sim.salvar_json()
         sim.criar_animacao()
     return sim

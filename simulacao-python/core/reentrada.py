@@ -55,7 +55,7 @@ class ReentrySimulation(Simulacao):
             max_temperature = 300 + max_heat_flux * 0.1  # Temperatura em Kelvin
             
             self.resultado = f"""
-📊 RESULTADOS DA SIMULAÇÃO DE REENTRADA:
+RESULTADOS DA SIMULAÇÃO DE REENTRADA:
 -----------------------------------------
 • Tipo: {self.tipo.value}
 • Altitude inicial: {self.h0/1000:.2f} km
@@ -72,7 +72,7 @@ class ReentrySimulation(Simulacao):
             return False
 
     def criar_animacao(self):
-        """Cria animação da reentrada atmosférica - VERSÃO CORRIGIDA"""
+        """Cria animação da reentrada atmosférica"""
         print("Criando animação de reentrada...")
         if self.y is None:
             print("Erro: Execute a simulação primeiro.")
@@ -87,8 +87,8 @@ class ReentrySimulation(Simulacao):
         
         # Configuração do gráfico
         ax.set_xlim(-2, 2)
-        ax.set_ylim(-5000, self.h0 * 1.1)  # Espaço extra para o solo
-        ax.set_title("🔥 REENTRADA ATMOSFÉRICA", fontsize=16, fontweight='bold')
+        ax.set_ylim(-5000, self.h0 * 1.1)
+        ax.set_title("REENTRADA ATMOSFÉRICA", fontsize=16, fontweight='bold')
         ax.set_xlabel("Direção (m)")
         ax.set_ylabel("Altitude (m)")
         ax.grid(True, alpha=0.3)
@@ -113,7 +113,7 @@ class ReentrySimulation(Simulacao):
         # Trajetória
         trajectory, = ax.plot([], [], 'r--', alpha=0.5, linewidth=1, label='Trajetória')
         
-        # Caixa de informações - CANTO SUPERIOR DIREITO
+        # Caixa de informações
         info_text = ax.text(0.98, 0.98, "", transform=ax.transAxes, fontsize=10,
                           verticalalignment='top', horizontalalignment='right',
                           bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
@@ -158,21 +158,21 @@ class ReentrySimulation(Simulacao):
             start_idx = max(0, i - 100)
             trajectory.set_data(np.zeros(i - start_idx + 1), self.y[start_idx:i+1])
             
-            # Informações em tempo real - CANTO SUPERIOR DIREITO
-            phase = "🛰️ FASE INICIAL" if current_altitude > 80000 else \
-                   "🔥 REENTRADA CRÍTICA" if current_altitude > 40000 else \
-                   "🪂 FASE FINAL" if current_altitude > 10000 else "🏁 QUASE TERRA"
+            # Informações em tempo real
+            phase = "FASE INICIAL" if current_altitude > 80000 else \
+                   "REENTRADA CRÍTICA" if current_altitude > 40000 else \
+                   "FASE FINAL" if current_altitude > 10000 else "QUASE TERRA"
             
             # Temperatura estimada
             temp = 300 + (abs(current_velocity)**3 * 1e-9)
             
             info_text.set_text(
-                f"⏰ Tempo: {current_time:.1f} s\n"
-                f"📍 Altitude: {current_altitude:.0f} m\n"
-                f"🚀 Velocidade: {abs(current_velocity):.0f} m/s\n"
-                f"🌡️ Temperatura: {temp:.0f} K\n"
-                f"📊 Fase: {phase}\n"
-                f"🔄 Frame: {frame_idx+1}/{len(frame_indices)}"
+                f"Tempo: {current_time:.1f} s\n"
+                f"Altitude: {current_altitude:.0f} m\n"
+                f"Velocidade: {abs(current_velocity):.0f} m/s\n"
+                f"Temperatura: {temp:.0f} K\n"
+                f"Fase: {phase}\n"
+                f"Frame: {frame_idx+1}/{len(frame_indices)}"
             )
             
             return capsule, plasma_trail, trajectory, info_text
@@ -203,7 +203,7 @@ class ReentrySimulation(Simulacao):
         plt.grid(True)
         plt.show()
         
-        print("✅ Gráfico estático exibido")
+        print("Gráfico estático exibido")
 
     def plotar_dados_completos(self):
         """Plota todos os dados da simulação"""

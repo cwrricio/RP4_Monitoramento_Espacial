@@ -11,32 +11,30 @@ class OrbitalSimulation(Simulacao):
         super().__init__(descricao, TipoSimulacao.ORBITA)
 
         # Constantes físicas
-        self.G = 6.67430e-11  # Constante gravitacional (m³/kg/s²) - valor mais preciso
+        self.G = 6.67430e-11  # Constante gravitacional (m³/kg/s²)
         self.M = 5.9722e24    # Massa da Terra (kg)
         self.R = 6.371e6      # Raio da Terra (m)
 
-        # Parâmetros da simulação - OTIMIZADOS para órbitas completas
-        self.h = 400000       # Altitude inicial (m) - Órbita LEO típica
-        self.dt = 5           # Passo de tempo (s) - Balance entre precisão e performance
-        self.t_max = 6000     # Tempo total de simulação (s) ~1.5 órbitas
+        # Parâmetros da simulação
+        self.h = 400000       # Altitude inicial (m)
+        self.dt = 5           # Passo de tempo (s)
+        self.t_max = 6000     # Tempo total de simulação (s)
 
-        # Dados que serão preenchidos
+        # Dados da simulação
         self.positions = None
         self.velocities = None
         self.altitudes = None
         self.times = None
         self.resultado = None
 
-    # ===========================================================
-    # SIMULAÇÃO PRINCIPAL - MÉTODO RK4 (MAIS PRECISO)
-    # ===========================================================
+    # Simulação principal - Método RK4
     def executarSimulacao(self):
-        """Executa a simulação orbital usando método RK4 (Runge-Kutta 4ª ordem)."""
-        print("🛰️ Executando simulação orbital com método RK4...")
+        """Executa a simulação orbital usando método RK4."""
+        print("Executando simulação orbital com método RK4...")
         
-        # Raio e velocidade orbital inicial (órbita circular)
+        # Condições iniciais
         r0 = self.R + self.h
-        v0 = np.sqrt(self.G * self.M / r0)  # Velocidade orbital circular
+        v0 = np.sqrt(self.G * self.M / r0)  # Velocidade orbital
 
         # Estado inicial: [x, y, vx, vy]
         state = np.array([r0, 0.0, 0.0, v0])
@@ -48,11 +46,7 @@ class OrbitalSimulation(Simulacao):
         times = np.zeros(n_steps)
 
         def orbital_derivatives(t, state_vec):
-            """
-            Calcula as derivadas para o sistema orbital.
-            state_vec = [x, y, vx, vy]
-            returns [vx, vy, ax, ay]
-            """
+            """Calcula as derivadas para o sistema orbital."""
             x, y, vx, vy = state_vec
             r = np.sqrt(x**2 + y**2)
             
@@ -89,17 +83,15 @@ class OrbitalSimulation(Simulacao):
         self.altitudes = altitudes
         self.times = times
         
-        print(f"✅ Simulação RK4 concluída: {n_steps} passos, {self.t_max/60:.1f} minutos simulados")
+        print(f"Simulação RK4 concluída: {n_steps} passos, {self.t_max/60:.1f} minutos simulados")
         return self
 
-    # ===========================================================
-    # PROCESSAMENTO DOS RESULTADOS
-    # ===========================================================
+    # Processamento dos resultados
     def processarSimulacao(self):
-        """Processa os resultados calculando parâmetros orbitais detalhados."""
+        """Processa os resultados calculando parâmetros orbitais."""
         try:
             if self.positions is None:
-                self.resultado = "❌ Erro: Simulação não foi executada."
+                self.resultado = "Erro: Simulação não foi executada."
                 return False
 
             # Cálculos de parâmetros orbitais
@@ -114,7 +106,7 @@ class OrbitalSimulation(Simulacao):
             # Calcula número de órbitas completas
             orbitas_completas = self.t_max / orbital_period
             
-            # Energia orbital (deve ser aproximadamente constante para órbita circular)
+            # Energia orbital
             energies = 0.5 * vel_norms**2 - self.G * self.M / pos_norms
             energy_conservation = np.std(energies) / np.mean(np.abs(energies))
             
@@ -124,7 +116,7 @@ class OrbitalSimulation(Simulacao):
             eccentricity = (max_alt - min_alt) / (max_alt + min_alt + 2 * self.R)
 
             self.resultado = f"""
-📊 RESULTADOS DA SIMULAÇÃO ORBITAL
+RESULTADOS DA SIMULAÇÃO ORBITAL
 ===================================
 • Tipo: {self.tipo.value}
 • Altitude média: {altitude_media:.2f} km
@@ -135,40 +127,38 @@ class OrbitalSimulation(Simulacao):
 • Conservação de energia: {energy_conservation:.2e}
 • Data: {self.dataExecucao}
 
-⚙️ PARÂMETROS DA SIMULAÇÃO:
+PARÂMETROS DA SIMULAÇÃO:
 • Altitude inicial: {self.h/1000:.1f} km
 • Tempo total: {self.t_max} s ({self.t_max/60:.1f} min)
 • Passo de integração: {self.dt} s
 • Método: RK4
 """
-            print(f"🔄 Órbitas completas simuladas: {orbitas_completas:.2f}")
-            print(f"📈 Conservação de energia: {energy_conservation:.2e}")
+            print(f"Órbitas completas simuladas: {orbitas_completas:.2f}")
+            print(f"Conservação de energia: {energy_conservation:.2e}")
             
             return True
             
         except Exception as e:
-            self.resultado = f"❌ Erro no processamento: {e}"
+            self.resultado = f"Erro no processamento: {e}"
             import traceback
             print(f"Detalhes do erro: {traceback.format_exc()}")
             return False
 
-    # ===========================================================
-    # ANIMAÇÃO DETALHADA
-    # ===========================================================
+    # Animação detalhada
     def criar_animacao_detalhada(self):
-        """Cria uma animação detalhada e visualmente agradável da órbita."""
+        """Cria uma animação detalhada da órbita."""
         if self.positions is None:
-            print("❌ Execute a simulação primeiro.")
+            print("Execute a simulação primeiro.")
             return None
 
-        print("🎬 Criando animação orbital detalhada...")
+        print("Criando animação orbital detalhada...")
         
         # Prepara dados para animação
-        tempos_min = self.times / 60  # Converte para minutos
+        tempos_min = self.times / 60
         velocidades = np.linalg.norm(self.velocities, axis=1)
         altitudes_km = self.altitudes / 1000
         
-        # Limita frames para performance (máximo 500 frames)
+        # Limita frames para performance
         total_frames = min(500, len(self.positions))
         step = max(1, len(self.positions) // total_frames)
         frame_indices = range(0, len(self.positions), step)
@@ -180,12 +170,12 @@ class OrbitalSimulation(Simulacao):
         ax_altitude = fig.add_subplot(gs[0, 1:])
         ax_velocidade = fig.add_subplot(gs[1, 1:])
 
-        # --- CONFIGURAÇÃO DO GRÁFICO DA ÓRBITA ---
+        # Gráfico da órbita
         max_range = 1.3 * (self.R + self.h)
         ax_orbita.set_xlim(-max_range, max_range)
         ax_orbita.set_ylim(-max_range, max_range)
         ax_orbita.set_aspect("equal")
-        ax_orbita.set_title("🌍 Órbita do Satélite", fontsize=14, weight="bold")
+        ax_orbita.set_title("Órbita do Satélite", fontsize=14, weight="bold")
         ax_orbita.set_xlabel("Posição X (m)")
         ax_orbita.set_ylabel("Posição Y (m)")
         ax_orbita.grid(True, alpha=0.3, linestyle="--")
@@ -202,8 +192,8 @@ class OrbitalSimulation(Simulacao):
         trajetoria, = ax_orbita.plot([], [], 'r-', linewidth=2, alpha=0.6, label="Trajetória")
         ax_orbita.legend(loc='upper right', framealpha=0.9)
 
-        # --- CONFIGURAÇÃO DO GRÁFICO DE ALTITUDE ---
-        ax_altitude.set_title("📈 Altitude vs Tempo", fontsize=12, weight="bold")
+        # Gráfico de altitude
+        ax_altitude.set_title("Altitude vs Tempo", fontsize=12, weight="bold")
         ax_altitude.set_ylabel("Altitude (km)")
         ax_altitude.set_xlim(0, tempos_min[-1])
         ax_altitude.set_ylim(np.min(altitudes_km) * 0.95, np.max(altitudes_km) * 1.05)
@@ -212,8 +202,8 @@ class OrbitalSimulation(Simulacao):
         ponto_alt, = ax_altitude.plot([], [], 'go', markersize=6)
         ax_altitude.legend(loc='upper right')
 
-        # --- CONFIGURAÇÃO DO GRÁFICO DE VELOCIDADE ---
-        ax_velocidade.set_title("🚀 Velocidade vs Tempo", fontsize=12, weight="bold")
+        # Gráfico de velocidade
+        ax_velocidade.set_title("Velocidade vs Tempo", fontsize=12, weight="bold")
         ax_velocidade.set_xlabel("Tempo (min)")
         ax_velocidade.set_ylabel("Velocidade (m/s)")
         ax_velocidade.set_xlim(0, tempos_min[-1])
@@ -231,9 +221,7 @@ class OrbitalSimulation(Simulacao):
         info_txt = fig.text(0.65, 0.02, "", fontsize=10, family="monospace",
                            bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.8))
 
-        # ===========================================================
-        # FUNÇÕES DE ANIMAÇÃO
-        # ===========================================================
+        # Funções de animação
         def init():
             """Inicializa a animação."""
             satelite.set_data([], [])
@@ -254,7 +242,7 @@ class OrbitalSimulation(Simulacao):
             x, y = self.positions[i]
             satelite.set_data([x], [y])
             
-            # Trajetória (últimos 20% dos pontos para performance)
+            # Trajetória (últimos 20% para performance)
             start_idx = max(0, i - len(self.positions) // 5)
             trajetoria.set_data(self.positions[start_idx:i+1, 0], 
                               self.positions[start_idx:i+1, 1])
@@ -268,24 +256,24 @@ class OrbitalSimulation(Simulacao):
 
             # Atualiza textos
             tempo_txt.set_text(
-                f"⏰ Tempo: {tempos_min[i]:.1f} min\n"
-                f"📍 Altitude: {altitudes_km[i]:.1f} km\n"
-                f"🚀 Velocidade: {velocidades[i]:.0f} m/s\n"
-                f"🛰️ Frame: {frame_idx+1}/{len(frame_indices)}"
+                f"Tempo: {tempos_min[i]:.1f} min\n"
+                f"Altitude: {altitudes_km[i]:.1f} km\n"
+                f"Velocidade: {velocidades[i]:.0f} m/s\n"
+                f"Frame: {frame_idx+1}/{len(frame_indices)}"
             )
             
             # Informações orbitais
             periodo_teorico = 2 * np.pi * np.sqrt((self.R + self.h)**3 / (self.G * self.M)) / 60
             info_txt.set_text(
                 f"PERÍODO ORBITAL:\n"
-                f"• Teórico: {periodo_teorico:.1f} min\n"
-                f"• Simulado: {2*np.pi*np.sqrt(np.linalg.norm(self.positions[i])**3/(self.G*self.M))/60:.1f} min\n"
+                f"Teórico: {periodo_teorico:.1f} min\n"
+                f"Simulado: {2*np.pi*np.sqrt(np.linalg.norm(self.positions[i])**3/(self.G*self.M))/60:.1f} min\n"
                 f"ALTITUDE:\n"
-                f"• Média: {np.mean(altitudes_km):.1f} km\n"
-                f"• Variação: ±{(np.max(altitudes_km)-np.min(altitudes_km))/2:.1f} km\n"
+                f"Média: {np.mean(altitudes_km):.1f} km\n"
+                f"Variação: ±{(np.max(altitudes_km)-np.min(altitudes_km))/2:.1f} km\n"
                 f"VELOCIDADE:\n"
-                f"• Média: {np.mean(velocidades):.0f} m/s\n"
-                f"• Variação: ±{(np.max(velocidades)-np.min(velocidades))/2:.0f} m/s"
+                f"Média: {np.mean(velocidades):.0f} m/s\n"
+                f"Variação: ±{(np.max(velocidades)-np.min(velocidades))/2:.0f} m/s"
             )
             
             return (satelite, trajetoria, linha_alt, ponto_alt, linha_vel, ponto_vel, tempo_txt, info_txt)
@@ -296,12 +284,12 @@ class OrbitalSimulation(Simulacao):
             init_func=init, interval=50, blit=False, repeat=True
         )
 
-        # Configuração final do layout
-        fig.suptitle("🛰️ SIMULAÇÃO ORBITAL - SATÉLITE EM ÓRBITA TERRESTRE",
+        # Configuração final
+        fig.suptitle("SIMULAÇÃO ORBITAL - SATÉLITE EM ÓRBITA TERRESTRE",
                     fontsize=16, fontweight="bold", y=0.95)
         plt.tight_layout(rect=[0, 0.03, 1, 0.93])
         
-        print("✅ Animação criada com sucesso!")
+        print("Animação criada com sucesso!")
         plt.show()
         return ani
 
@@ -309,13 +297,11 @@ class OrbitalSimulation(Simulacao):
         """Alias para compatibilidade com interface genérica."""
         return self.criar_animacao_detalhada()
 
-    # ===========================================================
-    # MÉTODOS AUXILIARES
-    # ===========================================================
+    # Métodos auxiliares
     def plotar_trajetoria_simples(self):
         """Plota uma visualização simples da trajetória orbital."""
         if self.positions is None:
-            print("❌ Execute a simulação primeiro.")
+            print("Execute a simulação primeiro.")
             return
         
         plt.figure(figsize=(10, 10))

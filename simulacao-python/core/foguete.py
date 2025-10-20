@@ -2,22 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from matplotlib.animation import FuncAnimation
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Rectangle
 from .base import Simulacao
 from .enums import TipoSimulacao
 
 class RocketSimulation(Simulacao):
     def __init__(self, descricao="Simulação de Lançamento de Foguete"):
         super().__init__(descricao, TipoSimulacao.FOGUETE)
-        self.thrust = 7607000  # N
-        self.m0 = 549000       # kg
-        self.m_propellant = 507000  # kg
-        self.burn_time = 180   # s
+        self.thrust = 7607000
+        self.m0 = 549000
+        self.m_propellant = 507000
+        self.burn_time = 180
         self.cd = 0.5
-        self.area = 10         # m²
+        self.area = 10
         self.g = 9.81
-        self.rho = 1.225       # ar ao nível do mar
-        self.t_max = 600       # tempo máximo da simulação
+        self.rho = 1.225
+        self.t_max = 600
         self.t = None
         self.y = None
         self.v = None
@@ -40,16 +40,17 @@ class RocketSimulation(Simulacao):
         return [v, dvdt]
 
     def executarSimulacao(self):
-        """Executa a simulação do foguete"""
         print("Executando simulação de lançamento de foguete...")
         t_eval = np.linspace(0, self.t_max, 2000)
         sol = solve_ivp(self.equations_of_motion, [0, self.t_max], [0, 0], 
                        t_eval=t_eval, method='RK45')
         self.t, self.y, self.v = sol.t, sol.y[0], sol.y[1]
+        
+        # Processa automaticamente após executar
+        self.processarSimulacao()
         return self
 
     def processarSimulacao(self):
-        """Processa os resultados da simulação"""
         try:
             if self.y is None or self.v is None:
                 self.resultado = "Erro: Simulação não foi executada."
@@ -61,30 +62,59 @@ class RocketSimulation(Simulacao):
             burnout_altitude = self.y[burnout_index] if burnout_index < len(self.y) else self.y[-1]
             burnout_velocity = self.v[burnout_index] if burnout_index < len(self.v) else self.v[-1]
             
+            # Calcula aceleração
+            acceleration = np.diff(self.v) / np.diff(self.t)
+            max_acceleration = np.max(np.abs(acceleration))
+            
             self.resultado = f"""
-📊 RESULTADOS DA SIMULAÇÃO DE FOGUETE:
+RESULTADOS DA SIMULAÇÃO DE FOGUETE:
 ----------------------------------------
 • Tipo: {self.tipo.value}
 • Altitude máxima: {max_altitude:.2f} m
 • Velocidade máxima: {max_velocity:.2f} m/s
 • Altitude no burnout: {burnout_altitude:.2f} m
 • Velocidade no burnout: {burnout_velocity:.2f} m/s
+• Aceleração máxima: {max_acceleration/9.81:.2f} G
 • Tempo de queima: {self.burn_time} s
-• Data da simulação: {self.dataExecucao}
+• Data da simulação: {self.dataExecucao.strftime('%Y-%m-%d %H:%M:%S')}
 """
             return True
         except Exception as e:
             self.resultado = f"Erro no processamento: {e}"
             return False
 
+    def _obter_resultados_json(self):
+        """Resultados específicos para foguete"""
+        resultados = super()._obter_resultados_json()
+        
+        # Adiciona métricas calculadas
+        if self.y is not None and self.v is not None:
+            max_altitude = np.max(self.y)
+            max_velocity = np.max(self.v)
+            burnout_index = np.argmax(self.t >= self.burn_time)
+            burnout_altitude = self.y[burnout_index] if burnout_index < len(self.y) else self.y[-1]
+            burnout_velocity = self.v[burnout_index] if burnout_index < len(self.v) else self.v[-1]
+            acceleration = np.diff(self.v) / np.diff(self.t)
+            max_acceleration = np.max(np.abs(acceleration))
+            
+            resultados.update({
+                'max_altitude': float(max_altitude),
+                'max_velocity': float(max_velocity),
+                'burnout_altitude': float(burnout_altitude),
+                'burnout_velocity': float(burnout_velocity),
+                'max_acceleration_g': float(max_acceleration/9.81)
+            })
+        
+        return resultados
+
     def criar_animacao(self):
-        """Cria animação do lançamento do foguete - CAIXA NO CANTO SUPERIOR DIREITO"""
+        """Cria animação do lançamento do foguete"""
         print("Criando animação do foguete...")
         if self.y is None:
             print("Erro: Execute a simulação primeiro.")
             return
         
-        # Limita o número de frames para melhor performance
+        # Limita o número de frames para performance
         total_frames = min(500, len(self.t))
         step = max(1, len(self.t) // total_frames)
         frame_indices = range(0, len(self.t), step)
@@ -95,7 +125,7 @@ class RocketSimulation(Simulacao):
         max_alt = max(self.y) * 1.1
         ax.set_xlim(-50, 50)
         ax.set_ylim(-max_alt * 0.05, max_alt)
-        ax.set_title(f"🚀 {self.tipo.value}", fontsize=14, fontweight='bold')
+        ax.set_title(f"{self.tipo.value}", fontsize=14, fontweight='bold')
         ax.set_xlabel("Posição X (m)")
         ax.set_ylabel("Altitude (m)")
         ax.grid(True, alpha=0.3)
@@ -115,12 +145,12 @@ class RocketSimulation(Simulacao):
         # Trajetória
         trajectory, = ax.plot([], [], 'b--', alpha=0.5, linewidth=1, label='Trajetória')
         
-        # Texto informativo - CANTO SUPERIOR DIREITO
+        # Texto informativo
         info_text = ax.text(0.98, 0.98, "", transform=ax.transAxes, fontsize=10,
                           verticalalignment='top', horizontalalignment='right',
                           bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
-        # Legenda no canto superior esquerdo
+        # Legenda
         ax.legend(loc='upper left')
 
         def init():
@@ -156,14 +186,14 @@ class RocketSimulation(Simulacao):
             start_idx = max(0, i - len(self.t) // 5)
             trajectory.set_data(np.zeros(i - start_idx + 1), self.y[start_idx:i+1])
             
-            # Informações em tempo real - CANTO SUPERIOR DIREITO
+            # Informações em tempo real
             phase = "FASE DE PROPULSÃO" if current_time < self.burn_time else "FASE BALÍSTICA"
             info_text.set_text(
-                f"⏰ Tempo: {current_time:.1f} s\n"
-                f"📍 Altitude: {current_altitude:.0f} m\n"
-                f"🚀 Velocidade: {current_velocity:.0f} m/s\n"
-                f"📊 Fase: {phase}\n"
-                f"🛰️ Frame: {frame_idx+1}/{len(frame_indices)}"
+                f"Tempo: {current_time:.1f} s\n"
+                f"Altitude: {current_altitude:.0f} m\n"
+                f"Velocidade: {current_velocity:.0f} m/s\n"
+                f"Fase: {phase}\n"
+                f"Frame: {frame_idx+1}/{len(frame_indices)}"
             )
             
             return rocket, flame, trajectory, info_text
@@ -195,7 +225,7 @@ class RocketSimulation(Simulacao):
         max_alt = max(self.y) * 1.1
         ax.set_xlim(-50, 50)
         ax.set_ylim(-max_alt * 0.05, max_alt)
-        ax.set_title(f"🚀 SIMULAÇÃO DE LANÇAMENTO DE FOGUETE", fontsize=16, fontweight='bold', pad=20)
+        ax.set_title("SIMULAÇÃO DE LANÇAMENTO DE FOGUETE", fontsize=16, fontweight='bold', pad=20)
         ax.set_xlabel("Posição X (m)")
         ax.set_ylabel("Altitude (m)")
         ax.grid(True, alpha=0.3)
@@ -215,13 +245,13 @@ class RocketSimulation(Simulacao):
         # Trajetória
         trajectory, = ax.plot([], [], 'b-', alpha=0.6, linewidth=2, zorder=1)
         
-        # CAIXA DE INFORMAÇÕES - CANTO SUPERIOR DIREITO
+        # Caixa de informações
         info_box = ax.text(0.98, 0.95, "", transform=ax.transAxes, fontsize=11,
                           verticalalignment='top', horizontalalignment='right',
                           bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', 
                                   alpha=0.9, edgecolor='orange'))
         
-        # Legenda de elementos no canto superior esquerdo
+        # Legenda de elementos
         legend_elements = [
             plt.Line2D([0], [0], marker='^', color='w', markerfacecolor='red', 
                       markersize=10, label='Foguete'),
@@ -261,19 +291,19 @@ class RocketSimulation(Simulacao):
             # Trajetória completa
             trajectory.set_data(np.zeros(i + 1), self.y[:i+1])
             
-            # INFORMAÇÕES - CANTO SUPERIOR DIREITO
-            phase = "🔥 PROPULSÃO" if current_time < self.burn_time else "🛰️ BALÍSTICA"
+            # Informações
+            phase = "PROPULSÃO" if current_time < self.burn_time else "BALÍSTICA"
             mass_current = self.mass(current_time)
             mass_percent = (mass_current / self.m0) * 100
             
             info_box.set_text(
-                f"📊 INFORMAÇÕES DA MISSÃO\n"
-                f"⏰ Tempo: {current_time:6.1f} s\n"
-                f"📍 Altitude: {current_altitude:6.0f} m\n"
-                f"🚀 Velocidade: {current_velocity:5.0f} m/s\n"
-                f"⚖️ Massa: {mass_percent:5.1f}%\n"
-                f"📈 Fase: {phase}\n"
-                f"🔄 Progresso: {frame_idx+1:3d}/{len(frame_indices)}"
+                f"INFORMAÇÕES DA MISSÃO\n"
+                f"Tempo: {current_time:6.1f} s\n"
+                f"Altitude: {current_altitude:6.0f} m\n"
+                f"Velocidade: {current_velocity:5.0f} m/s\n"
+                f"Massa: {mass_percent:5.1f}%\n"
+                f"Fase: {phase}\n"
+                f"Progresso: {frame_idx+1:3d}/{len(frame_indices)}"
             )
             
             return rocket, flame, trajectory, info_box

@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "tipo": "Lançamento de Foguete",
+    "descricao": "Simulação de Lançamento de Foguete",
+    "data_execucao": "2025-10-13 19:21:37",
+    "classe": "RocketSimulation"
+  },
+  "parametros_principais": {
+    "descricao": "Simulação de Lançamento de Foguete",
+    "tipo": "TipoSimulacao.FOGUETE",
+    "thrust": 7607000,
+    "m0": 549000,
+    "m_propellant": 507000,
+    "burn_time": 180,
+    "cd": 0.5,
+    "area": 10,
+    "g": 9.81,
+    "rho": 1.225,
+    "t_max": 600
+  },
+  "resultados_resumidos": {
+    "altitude_maxima": 149630.59563897218,
+    "tempo_total": 600.0,
+    "velocidade_maxima": 1521.7575568691507
+  },
+  "estatisticas": {
+    "altitude": {
+      "max": 149630.59563897218,
+      "min": 0.0,
+      "media": 79825.22694974866,
+      "pontos": 2000
+    },
+    "velocidade": {
+      "max": 1521.7575568691507,
+      "min": 0.0,
+      "media": 459.7271065363331
+    }
+  }
+}
