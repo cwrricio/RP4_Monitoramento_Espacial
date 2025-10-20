@@ -13,8 +13,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// MUDANÇA 1: Nomeamos o bean para que o Proxy possa encontrá-lo especificamente.
-// MUDANÇA 2: Implementamos a nova interface.
 @Service("realAstronautaService")
 public class AstronautaService implements AstronautaServiceInterface {
 
@@ -47,24 +45,21 @@ public class AstronautaService implements AstronautaServiceInterface {
         Astronauta astronauta = repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Astronauta não encontrado com ID: " + id));
 
-        // Atualiza os dados principais do astronauta
         astronauta.setNome(request.getNome());
         astronauta.setIdade(request.getIdade());
         astronauta.setAtivo(request.getAtivo());
         astronauta.setNivelAptidaoMedica(request.getNivelAptidaoMedica());
         astronauta.setMissoesRealizadas(request.getMissoesRealizadas());
 
-        // MUDANÇA 3 (CORREÇÃO DE BUG): Lógica para atualizar os dados biométricos
         if (request.getTipoBiometria() != null && !request.getTipoBiometria().isBlank()) {
-            DadosBiometricos biometria = astronauta.getDadosBiometricos();
-            if (biometria == null) {
-                biometria = new DadosBiometricos();
-                astronauta.setDadosBiometricos(biometria);
-            }
-            biometria.setTipo(request.getTipoBiometria());
-            biometria.setValor(request.getValorBiometria());
-            biometria.setUnidade(request.getUnidadeBiometria());
-            biometria.setRegistradoEm(LocalDateTime.now());
+            
+            DadosBiometricos novoDadoBiometrico = new DadosBiometricos();
+            novoDadoBiometrico.setTipo(request.getTipoBiometria());
+            novoDadoBiometrico.setValor(request.getValorBiometria());
+            novoDadoBiometrico.setUnidade(request.getUnidadeBiometria());
+            novoDadoBiometrico.setRegistradoEm(LocalDateTime.now());
+            
+            astronauta.adicionarDadoBiometrico(novoDadoBiometrico);
         }
         
         Astronauta astronautaSalvo = repository.save(astronauta);

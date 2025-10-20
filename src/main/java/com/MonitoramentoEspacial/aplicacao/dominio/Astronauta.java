@@ -1,7 +1,8 @@
 package com.MonitoramentoEspacial.aplicacao.dominio;
 
 import jakarta.persistence.*;
-
+import java.util.ArrayList;
+import java.util.List;
 @Entity
 @Table(name = "astronauta")
 public class Astronauta extends Funcionario {
@@ -9,9 +10,22 @@ public class Astronauta extends Funcionario {
     private String nivelAptidaoMedica;
     private int missoesRealizadas;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "dados_biometricos_id")
-    private DadosBiometricos dadosBiometricos;
+    @OneToMany(
+        mappedBy = "astronauta",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+
+    private List<DadosBiometricos> dadosBiometricos = new ArrayList<>();
+
+    public List<DadosBiometricos> getDadosBiometricos() {
+        return dadosBiometricos;
+    }
+
+    public void setDadosBiometricos(List<DadosBiometricos> dadosBiometricos) {
+        this.dadosBiometricos = dadosBiometricos;
+    }
 
     public String getNivelAptidaoMedica() { return nivelAptidaoMedica; }
     public void setNivelAptidaoMedica(String nivelAptidaoMedica) { this.nivelAptidaoMedica = nivelAptidaoMedica; }
@@ -19,15 +33,15 @@ public class Astronauta extends Funcionario {
     public int getMissoesRealizadas() { return missoesRealizadas; }
     public void setMissoesRealizadas(int missoesRealizadas) { this.missoesRealizadas = missoesRealizadas; }
     
-    public DadosBiometricos getDadosBiometricos() { return dadosBiometricos; }
-    public void setDadosBiometricos(DadosBiometricos dadosBiometricos) { this.dadosBiometricos = dadosBiometricos; }
 
+    public void adicionarDadoBiometrico(DadosBiometricos dado) {
+        this.dadosBiometricos.add(dado);
+        dado.setAstronauta(this);
+    }
 
     public boolean podeSerTripulante() {
         final String NIVEL_REQUERIDO = "APTO"; 
-        
         boolean temAptidaoMedica = NIVEL_REQUERIDO.equalsIgnoreCase(this.nivelAptidaoMedica);
-
         return this.isAtivo() && temAptidaoMedica;
     }
 }
