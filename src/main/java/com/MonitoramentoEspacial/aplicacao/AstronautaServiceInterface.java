@@ -17,4 +17,8 @@ public interface AstronautaServiceInterface {
     List<AstronautaDTO> listarAstronautas(String nome);
 
     AstronautaDTO atualizarAstronauta(Long id, AtualizaAstronautaRequest request);
+
+                     
+
+    
 }

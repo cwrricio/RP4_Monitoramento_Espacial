@@ -13,13 +13,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// MUDANÇA 1: Nomeamos o bean para que o Proxy possa encontrá-lo especificamente.
-// MUDANÇA 2: Implementamos a nova interface.
 @Service("realAstronautaService")
 public class AstronautaService implements AstronautaServiceInterface {
 
     @Autowired
     private AstronautaRepository repository;
+
 
     @Override
     @Transactional(readOnly = true)

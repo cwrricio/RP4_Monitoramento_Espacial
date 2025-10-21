@@ -16,10 +16,8 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // Permite que todos os endpoints (/**)
-                // aceitem requisições do localhost:3000 (onde seu React/Next roda)
                 registry.addMapping("/**") 
-                        .allowedOrigins("http://localhost:3000") // URL do seu front-end
+                        .allowedOrigins("http://localhost:3000") 
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

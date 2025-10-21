@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 @Table(name = "missao")
 public class Missao {
 
-    // ... atributos e anotações Jpa (iguais) ...
+    //  atributos e anotações Jpa 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,14 +36,10 @@ public class Missao {
     )
     private List<Astronauta> tripulacao = new ArrayList<>();
     
-    // Construtor vazio para JPA
     public Missao() {}
 
-
-    // ----------------------------------------------------
-    // METODOS DE DOMÍNIO (Comportamento) - Enriquecendo o modelo
-    // ----------------------------------------------------
-
+    // METODOS DE DOMÍNIO - Enriquecendo o modelo
+   
     /**
      * Inicia a simulação, alterando o status e registrando a data.
      * @throws IllegalStateException se a missão não estiver PLANEJADA.
@@ -78,17 +74,11 @@ public void associarTripulacao(List<Astronauta> novosTripulantes) {
         throw new IllegalArgumentException("Os seguintes astronautas estão inaptos para a missão: " + nomes + 
                                            ". Verifique o status 'ativo' e o 'nível de aptidão médica'.");
     }
-
-    // Se todos aptos, associa.
-    this.tripulacao.clear(); // Limpa se for um update
+    this.tripulacao.clear(); 
     this.tripulacao.addAll(novosTripulantes);
 }
-    
-    
 
-    // ----------------------------------------------------
-    // Getters e Setters (para JPA, mas preferir métodos de domínio)
-    // ----------------------------------------------------
+    // Getters e Setters para JPA
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -103,8 +93,5 @@ public void associarTripulacao(List<Astronauta> novosTripulantes) {
     public StatusMissao getStatus() { return status; }
     public void setStatus(StatusMissao status) { this.status = status; }
     public List<Astronauta> getTripulacao() { return tripulacao; }
-
-    // Manter o setter privado ou removê-lo se for para usar apenas o método de domínio
-    // Para JPA, pode ser útil manter, mas deve-se favorecer o método associarTripulacao
     public void setTripulacao(List<Astronauta> tripulacao) { this.tripulacao = tripulacao; }
 }
