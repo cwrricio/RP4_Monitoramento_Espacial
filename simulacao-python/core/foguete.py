@@ -5,6 +5,8 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
 from .base import Simulacao
 from .enums import TipoSimulacao
+from utils.physics import PhysicsUtils
+from utils.animation import AnimationUtils
 
 class RocketSimulation(Simulacao):
     def __init__(self, descricao="Simulação de Lançamento de Foguete"):
@@ -15,8 +17,9 @@ class RocketSimulation(Simulacao):
         self.burn_time = 180
         self.cd = 0.5
         self.area = 10
-        self.g = 9.81
-        self.rho = 1.225
+        self.g = PhysicsUtils.G0
+        self.rho0 = PhysicsUtils.RHO0
+        self.H = PhysicsUtils.H_ATMOSPHERE
         self.t_max = 600
         self.t = None
         self.y = None
@@ -35,20 +38,89 @@ class RocketSimulation(Simulacao):
         y, v = state
         m = self.mass(t)
         thrust = self.thrust_force(t)
-        drag = 0.5 * self.rho * self.cd * self.area * v**2 * np.sign(v)
+        
+        # Usar utilitário de física para densidade do ar
+        rho = PhysicsUtils.densidade_ar(y)
+        drag = PhysicsUtils.forca_arrasto(v, rho, self.cd, self.area)
+        
         dvdt = (thrust - drag - m * self.g) / m
         return [v, dvdt]
 
     def executarSimulacao(self):
         print("Executando simulação de lançamento de foguete...")
+        
+        # Notificar início da simulação
+        self.notify_simulation_update({
+            'status': 'INICIANDO',
+            'message': 'Simulação de foguete iniciada',
+            'step': 0,
+            'total_steps': 2000
+        })
+        
         t_eval = np.linspace(0, self.t_max, 2000)
         sol = solve_ivp(self.equations_of_motion, [0, self.t_max], [0, 0], 
                        t_eval=t_eval, method='RK45')
         self.t, self.y, self.v = sol.t, sol.y[0], sol.y[1]
         
+        # Notificar progresso durante a simulação
+        for i in range(0, len(self.t), 100):
+            self.notify_simulation_update({
+                'status': 'EXECUTANDO',
+                'step': i,
+                'total_steps': len(self.t),
+                'progresso': (i / len(self.t)) * 100,
+                'altitude_atual': float(self.y[i]),
+                'velocidade_atual': float(self.v[i]),
+                'tempo_atual': float(self.t[i])
+            })
+            
+            # Verificar condições de emergência
+            self._verificar_emergencias(i)
+        
         # Processa automaticamente após executar
         self.processarSimulacao()
         return self
+
+    def _verificar_emergencias(self, step_index):
+        """Verifica condições de emergência durante a simulação"""
+        if not self._emergency_observers:
+            return
+            
+        if step_index >= len(self.t) or step_index >= len(self.y) or step_index >= len(self.v):
+            return
+            
+        altitude = self.y[step_index]
+        velocidade = self.v[step_index]
+        tempo = self.t[step_index]
+        massa = self.mass(tempo)
+        
+        # Condições de emergência
+        if velocidade > 4000:  # Velocidade crítica
+            self.notify_emergency("VELOCIDADE_CRITICA", {
+                'tempo': float(tempo),
+                'velocidade': float(velocidade),
+                'altitude': float(altitude),
+                'massa': float(massa),
+                'severidade': 'ALTA'
+            })
+        
+        if tempo < self.burn_time and massa < self.m0 * 0.1:  # Combustível muito baixo
+            self.notify_emergency("COMBUSTIVEL_CRITICO", {
+                'tempo': float(tempo),
+                'massa_combustivel': float(massa - (self.m0 - self.m_propellant)),
+                'massa_total': float(massa),
+                'percentual_combustivel': ((massa - (self.m0 - self.m_propellant)) / self.m_propellant) * 100,
+                'severidade': 'MEDIA'
+            })
+        
+        if altitude > 100000 and velocidade < 1000:  # Falha em alcançar órbita
+            self.notify_emergency("FALHA_ORBITAL", {
+                'tempo': float(tempo),
+                'altitude': float(altitude),
+                'velocidade': float(velocidade),
+                'velocidade_orbital_necessaria': PhysicsUtils.velocidade_orbital(altitude),
+                'severidade': 'ALTA'
+            })
 
     def processarSimulacao(self):
         try:
@@ -66,22 +138,81 @@ class RocketSimulation(Simulacao):
             acceleration = np.diff(self.v) / np.diff(self.t)
             max_acceleration = np.max(np.abs(acceleration))
             
+            # Calcular velocidade orbital teórica
+            v_orbital = PhysicsUtils.velocidade_orbital(max_altitude)
+            
             self.resultado = f"""
 RESULTADOS DA SIMULAÇÃO DE FOGUETE:
 ----------------------------------------
 • Tipo: {self.tipo.value}
 • Altitude máxima: {max_altitude:.2f} m
 • Velocidade máxima: {max_velocity:.2f} m/s
+• Velocidade orbital teórica: {v_orbital:.2f} m/s
 • Altitude no burnout: {burnout_altitude:.2f} m
 • Velocidade no burnout: {burnout_velocity:.2f} m/s
 • Aceleração máxima: {max_acceleration/9.81:.2f} G
 • Tempo de queima: {self.burn_time} s
 • Data da simulação: {self.dataExecucao.strftime('%Y-%m-%d %H:%M:%S')}
 """
-            return True
+            # Chamar o processamento da classe base
+            return super().processarSimulacao()
+            
         except Exception as e:
             self.resultado = f"Erro no processamento: {e}"
             return False
+
+    def criar_animacao(self):
+        """Cria animação do lançamento do foguete usando AnimationUtils"""
+        print("Criando animação do foguete...")
+        if self.y is None:
+            print("Erro: Execute a simulação primeiro.")
+            return
+        
+        # Notificar início da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_INICIADA',
+            'message': 'Criando animação do lançamento'
+        })
+        
+        # Usar utilitário de animação
+        ani = AnimationUtils.criar_animacao_padrao(
+            self.t, self.y, 
+            "ALTITUDE DO FOGUETE VS TEMPO",
+            "Tempo (s)", 
+            "Altitude (m)",
+            interval=30
+        )
+        
+        # Notificar conclusão da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_CONCLUIDA',
+            'message': 'Animação criada com sucesso',
+            'total_frames': len(self.t)
+        })
+        
+        plt.show()
+        return ani
+
+    def criar_animacao_detalhada(self):
+        """Cria animação detalhada com múltiplos gráficos"""
+        if self.y is None or self.v is None:
+            print("Erro: Execute a simulação primeiro.")
+            return
+        
+        # Calcular aceleração
+        acceleration = np.diff(self.v) / np.diff(self.t)
+        acceleration_g = np.abs(acceleration) / 9.81
+        
+        # Usar painel multigráfico
+        datasets = [self.y, np.abs(self.v), acceleration_g, self.v**2/(2*9.81)]  # Energia cinética equivalente
+        titles = ['Altitude vs Tempo', 'Velocidade vs Tempo', 'Aceleração vs Tempo', 'Energia Cinética vs Tempo']
+        
+        ani = AnimationUtils.criar_painel_multigrafico(
+            self.t, datasets, titles, layout=(2, 2), figsize=(15, 10)
+        )
+        
+        plt.show()
+        return ani
 
     def _obter_resultados_json(self):
         """Resultados específicos para foguete"""
@@ -97,222 +228,19 @@ RESULTADOS DA SIMULAÇÃO DE FOGUETE:
             acceleration = np.diff(self.v) / np.diff(self.t)
             max_acceleration = np.max(np.abs(acceleration))
             
+            # Cálculos com PhysicsUtils
+            v_orbital = PhysicsUtils.velocidade_orbital(max_altitude)
+            v_escape = PhysicsUtils.velocidade_escape(max_altitude)
+            
             resultados.update({
                 'max_altitude': float(max_altitude),
                 'max_velocity': float(max_velocity),
                 'burnout_altitude': float(burnout_altitude),
                 'burnout_velocity': float(burnout_velocity),
-                'max_acceleration_g': float(max_acceleration/9.81)
+                'max_acceleration_g': float(max_acceleration/9.81),
+                'orbital_velocity': float(v_orbital),
+                'escape_velocity': float(v_escape),
+                'reached_orbit': float(max_velocity) >= v_orbital * 0.9
             })
         
         return resultados
-
-    def criar_animacao(self):
-        """Cria animação do lançamento do foguete"""
-        print("Criando animação do foguete...")
-        if self.y is None:
-            print("Erro: Execute a simulação primeiro.")
-            return
-        
-        # Limita o número de frames para performance
-        total_frames = min(500, len(self.t))
-        step = max(1, len(self.t) // total_frames)
-        frame_indices = range(0, len(self.t), step)
-        
-        fig, ax = plt.subplots(figsize=(10, 12))
-        
-        # Configuração do gráfico
-        max_alt = max(self.y) * 1.1
-        ax.set_xlim(-50, 50)
-        ax.set_ylim(-max_alt * 0.05, max_alt)
-        ax.set_title(f"{self.tipo.value}", fontsize=14, fontweight='bold')
-        ax.set_xlabel("Posição X (m)")
-        ax.set_ylabel("Altitude (m)")
-        ax.grid(True, alpha=0.3)
-        
-        # Elementos gráficos
-        rocket, = ax.plot([], [], 'r^', markersize=20, markeredgecolor='darkred', 
-                         markerfacecolor='red', label='Foguete')
-        
-        # Plataforma de lançamento
-        platform = Rectangle((-8, -max_alt * 0.04), 16, max_alt * 0.02, 
-                           color='gray', alpha=0.7, label='Plataforma')
-        ax.add_patch(platform)
-        
-        # Chama do foguete
-        flame, = ax.plot([], [], 'y-', linewidth=3, alpha=0.8, label='Propulsão')
-        
-        # Trajetória
-        trajectory, = ax.plot([], [], 'b--', alpha=0.5, linewidth=1, label='Trajetória')
-        
-        # Texto informativo
-        info_text = ax.text(0.98, 0.98, "", transform=ax.transAxes, fontsize=10,
-                          verticalalignment='top', horizontalalignment='right',
-                          bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-        
-        # Legenda
-        ax.legend(loc='upper left')
-
-        def init():
-            """Inicializa a animação"""
-            rocket.set_data([], [])
-            flame.set_data([], [])
-            trajectory.set_data([], [])
-            info_text.set_text("")
-            return rocket, flame, trajectory, info_text
-
-        def animate(frame_idx):
-            """Atualiza o frame da animação"""
-            i = frame_indices[frame_idx] if frame_idx < len(frame_indices) else frame_indices[-1]
-            
-            # Posição atual do foguete
-            current_altitude = self.y[i]
-            current_velocity = self.v[i]
-            current_time = self.t[i]
-            
-            # Foguete (sempre no centro)
-            rocket.set_data([0], [current_altitude])
-            
-            # Chama (visível apenas durante a queima)
-            if current_time < self.burn_time:
-                flame_length = 10 + (current_time / self.burn_time) * 20
-                flame.set_data([0, 0], [current_altitude - 5, current_altitude - flame_length])
-                flame.set_alpha(0.8)
-            else:
-                flame.set_data([], [])
-                flame.set_alpha(0)
-            
-            # Trajetória (últimos 20% dos pontos)
-            start_idx = max(0, i - len(self.t) // 5)
-            trajectory.set_data(np.zeros(i - start_idx + 1), self.y[start_idx:i+1])
-            
-            # Informações em tempo real
-            phase = "FASE DE PROPULSÃO" if current_time < self.burn_time else "FASE BALÍSTICA"
-            info_text.set_text(
-                f"Tempo: {current_time:.1f} s\n"
-                f"Altitude: {current_altitude:.0f} m\n"
-                f"Velocidade: {current_velocity:.0f} m/s\n"
-                f"Fase: {phase}\n"
-                f"Frame: {frame_idx+1}/{len(frame_indices)}"
-            )
-            
-            return rocket, flame, trajectory, info_text
-
-        # Cria a animação
-        ani = FuncAnimation(
-            fig, animate, frames=len(frame_indices),
-            init_func=init, interval=30, blit=True, repeat=True
-        )
-        
-        plt.tight_layout()
-        plt.show()
-        return ani
-
-    def criar_animacao_detalhada(self):
-        """Versão alternativa com layout mais organizado"""
-        print("Criando animação detalhada do foguete...")
-        if self.y is None:
-            print("Erro: Execute a simulação primeiro.")
-            return
-        
-        total_frames = min(400, len(self.t))
-        step = max(1, len(self.t) // total_frames)
-        frame_indices = range(0, len(self.t), step)
-        
-        fig, ax = plt.subplots(figsize=(12, 10))
-        
-        # Configuração do gráfico
-        max_alt = max(self.y) * 1.1
-        ax.set_xlim(-50, 50)
-        ax.set_ylim(-max_alt * 0.05, max_alt)
-        ax.set_title("SIMULAÇÃO DE LANÇAMENTO DE FOGUETE", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Posição X (m)")
-        ax.set_ylabel("Altitude (m)")
-        ax.grid(True, alpha=0.3)
-        
-        # Elementos gráficos
-        rocket, = ax.plot([], [], 'r^', markersize=25, markeredgecolor='darkred', 
-                         markerfacecolor='red', zorder=10)
-        
-        # Plataforma de lançamento
-        platform = Rectangle((-10, -max_alt * 0.03), 20, max_alt * 0.03, 
-                           color='#8B4513', alpha=0.8)
-        ax.add_patch(platform)
-        
-        # Chama do foguete
-        flame, = ax.plot([], [], 'y-', linewidth=4, alpha=0.9, zorder=5)
-        
-        # Trajetória
-        trajectory, = ax.plot([], [], 'b-', alpha=0.6, linewidth=2, zorder=1)
-        
-        # Caixa de informações
-        info_box = ax.text(0.98, 0.95, "", transform=ax.transAxes, fontsize=11,
-                          verticalalignment='top', horizontalalignment='right',
-                          bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', 
-                                  alpha=0.9, edgecolor='orange'))
-        
-        # Legenda de elementos
-        legend_elements = [
-            plt.Line2D([0], [0], marker='^', color='w', markerfacecolor='red', 
-                      markersize=10, label='Foguete'),
-            plt.Line2D([0], [0], color='yellow', linewidth=3, label='Propulsão'),
-            plt.Line2D([0], [0], color='blue', linewidth=2, label='Trajetória')
-        ]
-        ax.legend(handles=legend_elements, loc='upper left', framealpha=0.9)
-
-        def init():
-            rocket.set_data([], [])
-            flame.set_data([], [])
-            trajectory.set_data([], [])
-            info_box.set_text("")
-            return rocket, flame, trajectory, info_box
-
-        def animate(frame_idx):
-            i = frame_indices[frame_idx] if frame_idx < len(frame_indices) else frame_indices[-1]
-            
-            current_altitude = self.y[i]
-            current_velocity = self.v[i]
-            current_time = self.t[i]
-            
-            # Foguete
-            rocket.set_data([0], [current_altitude])
-            
-            # Chama
-            if current_time < self.burn_time:
-                flame_intensity = 0.9 - (current_time / self.burn_time) * 0.3
-                flame_length = 15 + (current_time / self.burn_time) * 25
-                flame.set_data([0, 0], [current_altitude - 8, current_altitude - flame_length])
-                flame.set_alpha(flame_intensity)
-                flame.set_color('yellow')
-            else:
-                flame.set_data([], [])
-                flame.set_alpha(0)
-            
-            # Trajetória completa
-            trajectory.set_data(np.zeros(i + 1), self.y[:i+1])
-            
-            # Informações
-            phase = "PROPULSÃO" if current_time < self.burn_time else "BALÍSTICA"
-            mass_current = self.mass(current_time)
-            mass_percent = (mass_current / self.m0) * 100
-            
-            info_box.set_text(
-                f"INFORMAÇÕES DA MISSÃO\n"
-                f"Tempo: {current_time:6.1f} s\n"
-                f"Altitude: {current_altitude:6.0f} m\n"
-                f"Velocidade: {current_velocity:5.0f} m/s\n"
-                f"Massa: {mass_percent:5.1f}%\n"
-                f"Fase: {phase}\n"
-                f"Progresso: {frame_idx+1:3d}/{len(frame_indices)}"
-            )
-            
-            return rocket, flame, trajectory, info_box
-
-        ani = FuncAnimation(
-            fig, animate, frames=len(frame_indices),
-            init_func=init, interval=35, blit=True, repeat=True
-        )
-        
-        plt.tight_layout()
-        plt.show()
-        return ani

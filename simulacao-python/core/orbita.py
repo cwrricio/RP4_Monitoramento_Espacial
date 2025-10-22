@@ -1,19 +1,21 @@
+# core/orbita.py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Circle
-from core.base import Simulacao
-from core.enums import TipoSimulacao
-
+from .base import Simulacao
+from .enums import TipoSimulacao
+from utils.physics import PhysicsUtils
+from utils.animation import AnimationUtils
 
 class OrbitalSimulation(Simulacao):
     def __init__(self, descricao="Simulação de Satélite em Órbita"):
         super().__init__(descricao, TipoSimulacao.ORBITA)
 
-        # Constantes físicas
-        self.G = 6.67430e-11  # Constante gravitacional (m³/kg/s²)
-        self.M = 5.9722e24    # Massa da Terra (kg)
-        self.R = 6.371e6      # Raio da Terra (m)
+        # Usar constantes do PhysicsUtils
+        self.G = PhysicsUtils.G
+        self.M = PhysicsUtils.M_EARTH
+        self.R = PhysicsUtils.R_EARTH
 
         # Parâmetros da simulação
         self.h = 400000       # Altitude inicial (m)
@@ -27,14 +29,39 @@ class OrbitalSimulation(Simulacao):
         self.times = None
         self.resultado = None
 
-    # Simulação principal - Método RK4
+    def orbital_derivatives(self, t, state_vec):
+        """Calcula as derivadas para o sistema orbital usando PhysicsUtils"""
+        x, y, vx, vy = state_vec
+        r = np.sqrt(x**2 + y**2)
+        
+        # Evita divisão por zero
+        if r < self.R:
+            r = self.R
+            
+        # Usar utilitário de física para aceleração gravitacional
+        g_mag = PhysicsUtils.gravidade(r - self.R)  # altitude = r - R_earth
+        factor = -g_mag / r  # Componente radial
+        
+        ax = factor * x
+        ay = factor * y
+        
+        return np.array([vx, vy, ax, ay])
+
     def executarSimulacao(self):
-        """Executa a simulação orbital usando método RK4."""
+        """Executa a simulação orbital usando método RK4 do PhysicsUtils"""
         print("Executando simulação orbital com método RK4...")
         
-        # Condições iniciais
+        # Notificar início da simulação
+        self.notify_simulation_update({
+            'status': 'INICIANDO',
+            'message': 'Simulação orbital iniciada',
+            'step': 0,
+            'total_steps': int(self.t_max / self.dt)
+        })
+        
+        # Condições iniciais usando PhysicsUtils
         r0 = self.R + self.h
-        v0 = np.sqrt(self.G * self.M / r0)  # Velocidade orbital
+        v0 = PhysicsUtils.velocidade_orbital(self.h)  # Velocidade orbital calculada
 
         # Estado inicial: [x, y, vx, vy]
         state = np.array([r0, 0.0, 0.0, v0])
@@ -45,38 +72,34 @@ class OrbitalSimulation(Simulacao):
         altitudes = np.zeros(n_steps)
         times = np.zeros(n_steps)
 
-        def orbital_derivatives(t, state_vec):
-            """Calcula as derivadas para o sistema orbital."""
-            x, y, vx, vy = state_vec
-            r = np.sqrt(x**2 + y**2)
-            
-            # Evita divisão por zero
-            if r < self.R:
-                r = self.R
-                
-            # Aceleração gravitacional
-            factor = -self.G * self.M / (r**3)
-            ax = factor * x
-            ay = factor * y
-            
-            return np.array([vx, vy, ax, ay])
-
-        # Integração temporal com RK4
+        # Integração temporal com RK4 do PhysicsUtils
         for i in range(n_steps):
             times[i] = i * self.dt
             
-            # Método RK4
-            k1 = self.dt * orbital_derivatives(times[i], state)
-            k2 = self.dt * orbital_derivatives(times[i] + self.dt/2, state + k1/2)
-            k3 = self.dt * orbital_derivatives(times[i] + self.dt/2, state + k2/2)
-            k4 = self.dt * orbital_derivatives(times[i] + self.dt, state + k3)
-            
-            state = state + (k1 + 2*k2 + 2*k3 + k4) / 6
+            # Usar RK4 do PhysicsUtils
+            state = PhysicsUtils.integracao_rk4(
+                self.orbital_derivatives, times[i], state, self.dt
+            )
 
             # Armazena resultados
             positions[i] = state[0:2]
             velocities[i] = state[2:4]
             altitudes[i] = np.linalg.norm(state[0:2]) - self.R
+
+            # Notificar progresso a cada 50 passos
+            if i % 50 == 0:
+                self.notify_simulation_update({
+                    'status': 'EXECUTANDO',
+                    'step': i,
+                    'total_steps': n_steps,
+                    'progresso': (i / n_steps) * 100,
+                    'altitude_atual': float(altitudes[i]),
+                    'velocidade_atual': float(np.linalg.norm(velocities[i])),
+                    'tempo_atual': float(times[i])
+                })
+                
+                # Verificar condições de emergência
+                self._verificar_emergencias(i, altitudes, velocities, times)
 
         self.positions = positions
         self.velocities = velocities
@@ -84,46 +107,97 @@ class OrbitalSimulation(Simulacao):
         self.times = times
         
         print(f"Simulação RK4 concluída: {n_steps} passos, {self.t_max/60:.1f} minutos simulados")
+        
+        # Processa automaticamente após executar
+        self.processarSimulacao()
         return self
 
-    # Processamento dos resultados
+    def _verificar_emergencias(self, step_index, altitudes, velocities, times):
+        """Verifica condições de emergência durante a simulação orbital"""
+        if not self._emergency_observers:
+            return
+            
+        if step_index >= len(altitudes) or step_index >= len(velocities):
+            return
+            
+        altitude = altitudes[step_index]
+        velocidade = np.linalg.norm(velocities[step_index])
+        tempo = times[step_index]
+        
+        # Condições de emergência orbital usando PhysicsUtils
+        v_orbital_teorica = PhysicsUtils.velocidade_orbital(altitude)
+        v_escape = PhysicsUtils.velocidade_escape(altitude)
+        
+        # Órbita muito baixa (risco de reentrada)
+        if altitude < 150000:  
+            self.notify_emergency("ORBITA_BAIXA", {
+                'tempo': float(tempo),
+                'altitude': float(altitude),
+                'velocidade': float(velocidade),
+                'altitude_minima_segura': 200000,
+                'velocidade_orbital_teorica': float(v_orbital_teorica),
+                'severidade': 'ALTA'
+            })
+        
+        # Órbita muito alta (risco de escape)
+        if altitude > 400000 and velocidade > v_escape * 0.8:
+            self.notify_emergency("ORBITA_ALTA", {
+                'tempo': float(tempo),
+                'altitude': float(altitude),
+                'velocidade': float(velocidade),
+                'velocidade_escape': float(v_escape),
+                'severidade': 'MEDIA'
+            })
+        
+        # Verificar variação excessiva de altitude (órbita instável)
+        if step_index > 10:
+            alt_variation = np.std(altitudes[max(0, step_index-10):step_index])
+            if alt_variation > 50000:  # Variação maior que 50km
+                self.notify_emergency("ORBITA_INSTAVEL", {
+                    'tempo': float(tempo),
+                    'variacao_altitude': float(alt_variation),
+                    'severidade': 'ALTA'
+                })
+
     def processarSimulacao(self):
-        """Processa os resultados calculando parâmetros orbitais."""
+        """Processa os resultados calculando parâmetros orbitais com PhysicsUtils"""
         try:
             if self.positions is None:
                 self.resultado = "Erro: Simulação não foi executada."
                 return False
 
-            # Cálculos de parâmetros orbitais
+            # Cálculos de parâmetros orbitais usando PhysicsUtils
             pos_norms = np.linalg.norm(self.positions, axis=1)
             vel_norms = np.linalg.norm(self.velocities, axis=1)
             
             orbital_radius = np.mean(pos_norms)
-            orbital_period = 2 * np.pi * np.sqrt(orbital_radius**3 / (self.G * self.M))
-            orbital_velocity = np.sqrt(self.G * self.M / orbital_radius)
-            altitude_media = (orbital_radius - self.R) / 1000
+            orbital_period = PhysicsUtils.periodo_orbital(orbital_radius - self.R)
+            orbital_velocity = PhysicsUtils.velocidade_orbital(orbital_radius - self.R)
+            altitude_media = orbital_radius - self.R
             
             # Calcula número de órbitas completas
             orbitas_completas = self.t_max / orbital_period
             
-            # Energia orbital
-            energies = 0.5 * vel_norms**2 - self.G * self.M / pos_norms
+            # Energia orbital usando PhysicsUtils
+            energies = [PhysicsUtils.energia_orbital(alt, vel) 
+                       for alt, vel in zip(self.altitudes, vel_norms)]
             energy_conservation = np.std(energies) / np.mean(np.abs(energies))
             
-            # Excentricidade aproximada
-            min_alt = np.min(self.altitudes)
-            max_alt = np.max(self.altitudes)
-            eccentricity = (max_alt - min_alt) / (max_alt + min_alt + 2 * self.R)
+            # Excentricidade usando PhysicsUtils
+            eccentricities = [PhysicsUtils.excentricidade_orbital(alt, vel)
+                             for alt, vel in zip(self.altitudes, vel_norms)]
+            eccentricity_mean = np.mean(eccentricities)
 
             self.resultado = f"""
 RESULTADOS DA SIMULAÇÃO ORBITAL
 ===================================
 • Tipo: {self.tipo.value}
-• Altitude média: {altitude_media:.2f} km
+• Altitude média: {altitude_media/1000:.2f} km
 • Período orbital: {orbital_period:.2f} s ({orbital_period/60:.2f} min)
 • Velocidade orbital: {orbital_velocity:.2f} m/s
+• Velocidade de escape: {PhysicsUtils.velocidade_escape(altitude_media):.2f} m/s
 • Órbitas simuladas: {orbitas_completas:.2f}
-• Excentricidade: {eccentricity:.4f}
+• Excentricidade média: {eccentricity_mean:.4f}
 • Conservação de energia: {energy_conservation:.2e}
 • Data: {self.dataExecucao}
 
@@ -136,7 +210,8 @@ PARÂMETROS DA SIMULAÇÃO:
             print(f"Órbitas completas simuladas: {orbitas_completas:.2f}")
             print(f"Conservação de energia: {energy_conservation:.2e}")
             
-            return True
+            # Chamar o processamento da classe base
+            return super().processarSimulacao()
             
         except Exception as e:
             self.resultado = f"Erro no processamento: {e}"
@@ -144,162 +219,95 @@ PARÂMETROS DA SIMULAÇÃO:
             print(f"Detalhes do erro: {traceback.format_exc()}")
             return False
 
-    # Animação detalhada
+    def criar_animacao(self):
+        """Cria animação orbital usando AnimationUtils"""
+        if self.positions is None:
+            print("Execute a simulação primeiro.")
+            return None
+
+        print("Criando animação orbital...")
+        
+        # Notificar início da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_INICIADA',
+            'message': 'Criando animação orbital'
+        })
+        
+        # Usar utilitário de animação orbital
+        ani = AnimationUtils.criar_animacao_orbita(
+            self.positions, self.times, "SIMULAÇÃO ORBITAL - SATÉLITE EM ÓRBITA TERRESTRE"
+        )
+        
+        # Notificar conclusão da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_CONCLUIDA',
+            'message': 'Animação orbital criada com sucesso'
+        })
+        
+        print("Animação criada com sucesso!")
+        plt.show()
+        return ani
+
     def criar_animacao_detalhada(self):
-        """Cria uma animação detalhada da órbita."""
+        """Cria uma animação detalhada da órbita com múltiplos gráficos"""
         if self.positions is None:
             print("Execute a simulação primeiro.")
             return None
 
         print("Criando animação orbital detalhada...")
         
-        # Prepara dados para animação
+        # Notificar início da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_INICIADA',
+            'message': 'Criando animação orbital detalhada'
+        })
+        
+        # Preparar dados para animação
         tempos_min = self.times / 60
         velocidades = np.linalg.norm(self.velocities, axis=1)
         altitudes_km = self.altitudes / 1000
         
-        # Limita frames para performance
-        total_frames = min(500, len(self.positions))
-        step = max(1, len(self.positions) // total_frames)
-        frame_indices = range(0, len(self.positions), step)
-
-        # Configura figura
-        fig = plt.figure(figsize=(15, 10))
-        gs = fig.add_gridspec(2, 3, width_ratios=[1.3, 1, 1])
-        ax_orbita = fig.add_subplot(gs[:, 0])
-        ax_altitude = fig.add_subplot(gs[0, 1:])
-        ax_velocidade = fig.add_subplot(gs[1, 1:])
-
-        # Gráfico da órbita
-        max_range = 1.3 * (self.R + self.h)
-        ax_orbita.set_xlim(-max_range, max_range)
-        ax_orbita.set_ylim(-max_range, max_range)
-        ax_orbita.set_aspect("equal")
-        ax_orbita.set_title("Órbita do Satélite", fontsize=14, weight="bold")
-        ax_orbita.set_xlabel("Posição X (m)")
-        ax_orbita.set_ylabel("Posição Y (m)")
-        ax_orbita.grid(True, alpha=0.3, linestyle="--")
-
-        # Terra
-        terra = Circle((0, 0), self.R, color="#1f77b4", alpha=0.8, label='Terra')
-        atmosfera = Circle((0, 0), self.R * 1.02, color="#87ceeb", alpha=0.2, label='Atmosfera')
-        ax_orbita.add_patch(terra)
-        ax_orbita.add_patch(atmosfera)
-
-        # Elementos da animação
-        satelite, = ax_orbita.plot([], [], 'ro', markersize=10, markeredgecolor='darkred', 
-                                  markerfacecolor='red', label="Satélite")
-        trajetoria, = ax_orbita.plot([], [], 'r-', linewidth=2, alpha=0.6, label="Trajetória")
-        ax_orbita.legend(loc='upper right', framealpha=0.9)
-
-        # Gráfico de altitude
-        ax_altitude.set_title("Altitude vs Tempo", fontsize=12, weight="bold")
-        ax_altitude.set_ylabel("Altitude (km)")
-        ax_altitude.set_xlim(0, tempos_min[-1])
-        ax_altitude.set_ylim(np.min(altitudes_km) * 0.95, np.max(altitudes_km) * 1.05)
-        ax_altitude.grid(True, alpha=0.3)
-        linha_alt, = ax_altitude.plot([], [], 'g-', lw=2, label='Altitude')
-        ponto_alt, = ax_altitude.plot([], [], 'go', markersize=6)
-        ax_altitude.legend(loc='upper right')
-
-        # Gráfico de velocidade
-        ax_velocidade.set_title("Velocidade vs Tempo", fontsize=12, weight="bold")
-        ax_velocidade.set_xlabel("Tempo (min)")
-        ax_velocidade.set_ylabel("Velocidade (m/s)")
-        ax_velocidade.set_xlim(0, tempos_min[-1])
-        ax_velocidade.set_ylim(np.min(velocidades) * 0.95, np.max(velocidades) * 1.05)
-        ax_velocidade.grid(True, alpha=0.3)
-        linha_vel, = ax_velocidade.plot([], [], 'b-', lw=2, label='Velocidade')
-        ponto_vel, = ax_velocidade.plot([], [], 'bo', markersize=6)
-        ax_velocidade.legend(loc='upper right')
-
-        # Textos informativos
-        tempo_txt = ax_orbita.text(0.02, 0.98, "", transform=ax_orbita.transAxes,
-                                  fontsize=11, weight="bold", va="top",
-                                  bbox=dict(boxstyle="round,pad=0.4", fc="white", alpha=0.8))
-
-        info_txt = fig.text(0.65, 0.02, "", fontsize=10, family="monospace",
-                           bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.8))
-
-        # Funções de animação
-        def init():
-            """Inicializa a animação."""
-            satelite.set_data([], [])
-            trajetoria.set_data([], [])
-            linha_alt.set_data([], [])
-            ponto_alt.set_data([], [])
-            linha_vel.set_data([], [])
-            ponto_vel.set_data([], [])
-            tempo_txt.set_text("")
-            info_txt.set_text("")
-            return (satelite, trajetoria, linha_alt, ponto_alt, linha_vel, ponto_vel, tempo_txt, info_txt)
-
-        def animate(frame_idx):
-            """Atualiza o frame da animação."""
-            i = frame_indices[frame_idx] if frame_idx < len(frame_indices) else frame_indices[-1]
-            
-            # Atualiza órbita
-            x, y = self.positions[i]
-            satelite.set_data([x], [y])
-            
-            # Trajetória (últimos 20% para performance)
-            start_idx = max(0, i - len(self.positions) // 5)
-            trajetoria.set_data(self.positions[start_idx:i+1, 0], 
-                              self.positions[start_idx:i+1, 1])
-
-            # Atualiza gráficos de altitude e velocidade
-            linha_alt.set_data(tempos_min[:i+1], altitudes_km[:i+1])
-            ponto_alt.set_data([tempos_min[i]], [altitudes_km[i]])
-
-            linha_vel.set_data(tempos_min[:i+1], velocidades[:i+1])
-            ponto_vel.set_data([tempos_min[i]], [velocidades[i]])
-
-            # Atualiza textos
-            tempo_txt.set_text(
-                f"Tempo: {tempos_min[i]:.1f} min\n"
-                f"Altitude: {altitudes_km[i]:.1f} km\n"
-                f"Velocidade: {velocidades[i]:.0f} m/s\n"
-                f"Frame: {frame_idx+1}/{len(frame_indices)}"
-            )
-            
-            # Informações orbitais
-            periodo_teorico = 2 * np.pi * np.sqrt((self.R + self.h)**3 / (self.G * self.M)) / 60
-            info_txt.set_text(
-                f"PERÍODO ORBITAL:\n"
-                f"Teórico: {periodo_teorico:.1f} min\n"
-                f"Simulado: {2*np.pi*np.sqrt(np.linalg.norm(self.positions[i])**3/(self.G*self.M))/60:.1f} min\n"
-                f"ALTITUDE:\n"
-                f"Média: {np.mean(altitudes_km):.1f} km\n"
-                f"Variação: ±{(np.max(altitudes_km)-np.min(altitudes_km))/2:.1f} km\n"
-                f"VELOCIDADE:\n"
-                f"Média: {np.mean(velocidades):.0f} m/s\n"
-                f"Variação: ±{(np.max(velocidades)-np.min(velocidades))/2:.0f} m/s"
-            )
-            
-            return (satelite, trajetoria, linha_alt, ponto_alt, linha_vel, ponto_vel, tempo_txt, info_txt)
-
-        # Cria animação
-        ani = FuncAnimation(
-            fig, animate, frames=len(frame_indices),
-            init_func=init, interval=50, blit=False, repeat=True
-        )
-
-        # Configuração final
-        fig.suptitle("SIMULAÇÃO ORBITAL - SATÉLITE EM ÓRBITA TERRESTRE",
-                    fontsize=16, fontweight="bold", y=0.95)
-        plt.tight_layout(rect=[0, 0.03, 1, 0.93])
+        # Calcular acelerações
+        aceleracoes = []
+        for i in range(1, len(velocidades)):
+            dv = velocidades[i] - velocidades[i-1]
+            dt = self.times[i] - self.times[i-1]
+            if dt > 0:
+                aceleracoes.append(dv / dt)
+            else:
+                aceleracoes.append(0)
+        aceleracoes = np.array(aceleracoes)
         
-        print("Animação criada com sucesso!")
+        # Criar painel multigráfico
+        datasets = [
+            altitudes_km,
+            velocidades,
+            np.abs(aceleracoes) if len(aceleracoes) > 0 else np.zeros(len(tempos_min)-1),
+            [PhysicsUtils.energia_orbital(alt, vel) for alt, vel in zip(self.altitudes, velocidades)]
+        ]
+        
+        titles = [
+            'Altitude vs Tempo',
+            'Velocidade vs Tempo', 
+            'Aceleração vs Tempo',
+            'Energia Orbital vs Tempo'
+        ]
+        
+        ani = AnimationUtils.criar_painel_multigrafico(
+            tempos_min, datasets, titles, layout=(2, 2), figsize=(15, 10)
+        )
+        
+        # Notificar conclusão da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_CONCLUIDA',
+            'message': 'Animação detalhada criada com sucesso'
+        })
+        
         plt.show()
         return ani
 
-    def criar_animacao(self):
-        """Alias para compatibilidade com interface genérica."""
-        return self.criar_animacao_detalhada()
-
-    # Métodos auxiliares
     def plotar_trajetoria_simples(self):
-        """Plota uma visualização simples da trajetória orbital."""
+        """Plota uma visualização simples da trajetória orbital"""
         if self.positions is None:
             print("Execute a simulação primeiro.")
             return
@@ -333,3 +341,41 @@ PARÂMETROS DA SIMULAÇÃO:
             'altitudes': self.altitudes,
             'times': self.times
         }
+
+    def _obter_resultados_json(self):
+        """Resultados específicos para órbita em formato JSON"""
+        resultados = super()._obter_resultados_json()
+        
+        # Adiciona métricas calculadas específicas da órbita
+        if self.positions is not None and self.velocities is not None:
+            pos_norms = np.linalg.norm(self.positions, axis=1)
+            vel_norms = np.linalg.norm(self.velocities, axis=1)
+            
+            orbital_radius = np.mean(pos_norms)
+            orbital_period = PhysicsUtils.periodo_orbital(orbital_radius - self.R)
+            orbital_velocity = PhysicsUtils.velocidade_orbital(orbital_radius - self.R)
+            altitude_media = (orbital_radius - self.R) / 1000
+            
+            # Energia orbital
+            energies = [PhysicsUtils.energia_orbital(alt, vel) 
+                       for alt, vel in zip(self.altitudes, vel_norms)]
+            energy_conservation = np.std(energies) / np.mean(np.abs(energies))
+            
+            # Excentricidade
+            eccentricities = [PhysicsUtils.excentricidade_orbital(alt, vel)
+                             for alt, vel in zip(self.altitudes, vel_norms)]
+            eccentricity_mean = np.mean(eccentricities)
+            
+            resultados.update({
+                'orbital_radius': float(orbital_radius),
+                'orbital_period': float(orbital_period),
+                'orbital_velocity': float(orbital_velocity),
+                'mean_altitude_km': float(altitude_media),
+                'energy_conservation': float(energy_conservation),
+                'eccentricity': float(eccentricity_mean),
+                'orbits_completed': float(self.t_max / orbital_period),
+                'initial_altitude_km': float(self.h / 1000),
+                'escape_velocity': float(PhysicsUtils.velocidade_escape(orbital_radius - self.R))
+            })
+        
+        return resultados

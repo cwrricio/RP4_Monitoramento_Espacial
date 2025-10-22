@@ -1,9 +1,12 @@
+# core/reentrada.py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
 from .base import Simulacao
 from .enums import TipoSimulacao
+from utils.physics import PhysicsUtils
+from utils.animation import AnimationUtils
 
 class ReentrySimulation(Simulacao):
     def __init__(self, descricao="Simulação de Reentrada Atmosférica"):
@@ -13,33 +16,118 @@ class ReentrySimulation(Simulacao):
         self.cd = 1.5     # coeficiente de arrasto aumentado
         self.area = 15    # área aumentada
         self.m = 5000     # massa aumentada
-        self.rho0 = 1.225 # densidade do ar ao nível do mar
-        self.H = 8500     # escala de altura atmosférica
-        self.g = 9.81     # gravidade
+        
+        # Usar constantes do PhysicsUtils
+        self.rho0 = PhysicsUtils.RHO0
+        self.H = PhysicsUtils.H_ATMOSPHERE
+        self.g = PhysicsUtils.G0
+        
         self.dt = 0.1     # passo de tempo
 
     def executarSimulacao(self):
         print("Executando simulação de reentrada...")
+        
+        # Notificar início da simulação
+        self.notify_simulation_update({
+            'status': 'INICIANDO',
+            'message': 'Simulação de reentrada iniciada',
+            'step': 0,
+            'total_steps': 'dinâmico'
+        })
+        
         y, v = self.h0, self.v0
         ys, vs, ts = [], [], []
         t = 0
+        step_count = 0
 
         while y > 0:
-            rho = self.rho0 * np.exp(-y / self.H)
-            drag = 0.5 * rho * self.cd * self.area * v**2 * np.sign(v)
+            # Usar PhysicsUtils para cálculos físicos
+            rho = PhysicsUtils.densidade_ar(y)
+            drag = PhysicsUtils.forca_arrasto(v, rho, self.cd, self.area)
             a = -self.g - drag / self.m
+            
             v += a * self.dt
             y += v * self.dt
             t += self.dt
             ys.append(y)
             vs.append(v)
             ts.append(t)
+            step_count += 1
+
+            # Notificar progresso a cada 100 passos
+            if step_count % 100 == 0:
+                # Calcular número Mach e pressão dinâmica
+                mach = PhysicsUtils.numero_mach(abs(v), y)
+                pressao_dinamica = PhysicsUtils.pressao_dinamica(abs(v), y)
+                
+                self.notify_simulation_update({
+                    'status': 'EXECUTANDO',
+                    'step': step_count,
+                    'altitude_atual': float(y),
+                    'velocidade_atual': float(abs(v)),
+                    'tempo_atual': float(t),
+                    'aceleracao_atual': float(abs(a)),
+                    'numero_mach': float(mach),
+                    'pressao_dinamica': float(pressao_dinamica)
+                })
+                
+                # Verificar condições de emergência
+                self._verificar_emergencias(step_count, y, v, a, t)
 
         self.t, self.y, self.v = np.array(ts), np.array(ys), np.array(vs)
+        
+        # Processa automaticamente após executar
+        self.processarSimulacao()
         return self
 
+    def _verificar_emergencias(self, step_count, y, v, a, t):
+        """Verifica condições de emergência durante a reentrada usando PhysicsUtils"""
+        if not self._emergency_observers:
+            return
+        
+        # Condições de emergência específicas da reentrada
+        aceleracao_g = abs(a) / 9.81
+        
+        if aceleracao_g > 8:  # Desaceleração crítica
+            self.notify_emergency("DESACELERACAO_CRITICA", {
+                'tempo': float(t),
+                'altitude': float(y),
+                'velocidade': float(abs(v)),
+                'aceleracao_g': float(aceleracao_g),
+                'limite_seguro': 6.0,
+                'severidade': 'ALTA'
+            })
+        
+        if abs(v) > 5000 and y < 50000:  # Velocidade muito alta em baixa altitude
+            self.notify_emergency("VELOCIDADE_ELEVADA", {
+                'tempo': float(t),
+                'altitude': float(y),
+                'velocidade': float(abs(v)),
+                'severidade': 'MEDIA'
+            })
+        
+        # Temperatura usando PhysicsUtils
+        temperature = PhysicsUtils.temperatura_reatrada(abs(v), y)
+        
+        if temperature > 2000:  # Temperatura crítica
+            self.notify_emergency("SUPERAQUECIMENTO", {
+                'tempo': float(t),
+                'altitude': float(y),
+                'temperatura': float(temperature),
+                'limite_seguro': 1500,
+                'severidade': 'ALTA'
+            })
+        
+        if y < 10000 and abs(v) > 1000:  # Aproximação final muito rápida
+            self.notify_emergency("APROXIMACAO_RAPIDA", {
+                'tempo': float(t),
+                'altitude': float(y),
+                'velocidade': float(abs(v)),
+                'severidade': 'CRITICA'
+            })
+
     def processarSimulacao(self):
-        """Processa os resultados da simulação de reentrada"""
+        """Processa os resultados da simulação de reentrada com PhysicsUtils"""
         try:
             if not hasattr(self, 'y') or not hasattr(self, 'v'):
                 self.resultado = "Erro: Simulação não foi executada."
@@ -50,10 +138,20 @@ class ReentrySimulation(Simulacao):
             max_deceleration = np.max(np.abs(accelerations))
             impact_velocity = self.v[-1] if len(self.v) > 0 else 0
             
-            # Temperatura estimada (simplificada)
-            max_heat_flux = np.max(self.v**3 * np.sqrt(self.rho0 * np.exp(-self.y / self.H)))
-            max_temperature = 300 + max_heat_flux * 0.1  # Temperatura em Kelvin
+            # Temperatura máxima usando PhysicsUtils
+            max_temperature = 0
+            for i in range(len(self.y)):
+                temp = PhysicsUtils.temperatura_reatrada(abs(self.v[i]), self.y[i])
+                if temp > max_temperature:
+                    max_temperature = temp
             
+            # Calcular número Mach máximo
+            max_mach = 0
+            for i in range(len(self.y)):
+                mach = PhysicsUtils.numero_mach(abs(self.v[i]), self.y[i])
+                if mach > max_mach:
+                    max_mach = mach
+
             self.resultado = f"""
 RESULTADOS DA SIMULAÇÃO DE REENTRADA:
 -----------------------------------------
@@ -63,127 +161,96 @@ RESULTADOS DA SIMULAÇÃO DE REENTRADA:
 • Velocidade de impacto: {abs(impact_velocity):.1f} m/s
 • Desaceleração máxima: {max_deceleration/9.81:.1f} G
 • Temperatura máxima: {max_temperature:.0f} K
+• Número Mach máximo: {max_mach:.2f}
 • Tempo total: {self.t[-1]:.1f} s
 • Data da simulação: {self.dataExecucao}
 """
-            return True
+            # Chamar o processamento da classe base
+            return super().processarSimulacao()
+            
         except Exception as e:
             self.resultado = f"Erro no processamento: {e}"
             return False
 
     def criar_animacao(self):
-        """Cria animação da reentrada atmosférica"""
+        """Cria animação da reentrada atmosférica usando AnimationUtils"""
         print("Criando animação de reentrada...")
         if self.y is None:
             print("Erro: Execute a simulação primeiro.")
             return
         
-        # Limita frames para performance
-        total_frames = min(400, len(self.y))
-        step = max(1, len(self.y) // total_frames)
-        frame_indices = range(0, len(self.y), step)
+        # Notificar início da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_INICIADA', 
+            'message': 'Criando animação de reentrada'
+        })
         
-        fig, ax = plt.subplots(figsize=(10, 12))
-        
-        # Configuração do gráfico
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-5000, self.h0 * 1.1)
-        ax.set_title("REENTRADA ATMOSFÉRICA", fontsize=16, fontweight='bold')
-        ax.set_xlabel("Direção (m)")
-        ax.set_ylabel("Altitude (m)")
-        ax.grid(True, alpha=0.3)
-        
-        # Cores de fundo para atmosfera
-        ax.axhspan(80000, self.h0, alpha=0.1, color='black', label='Espaço')
-        ax.axhspan(40000, 80000, alpha=0.1, color='darkblue', label='Alta Atmosfera')
-        ax.axhspan(10000, 40000, alpha=0.1, color='blue', label='Atmosfera Média')
-        ax.axhspan(0, 10000, alpha=0.1, color='lightblue', label='Baixa Atmosfera')
-        
-        # Solo
-        ground = Rectangle((-10, -5000), 20, 5000, color='brown', alpha=0.7, label='Superfície')
-        ax.add_patch(ground)
-        
-        # Cápsula
-        capsule, = ax.plot([], [], 'ro', markersize=12, markeredgecolor='darkred', 
-                          markerfacecolor='red', label='Cápsula')
-        
-        # Esteira de plasma
-        plasma_trail, = ax.plot([], [], 'y-', linewidth=3, alpha=0.7, label='Esteira de Plasma')
-        
-        # Trajetória
-        trajectory, = ax.plot([], [], 'r--', alpha=0.5, linewidth=1, label='Trajetória')
-        
-        # Caixa de informações
-        info_text = ax.text(0.98, 0.98, "", transform=ax.transAxes, fontsize=10,
-                          verticalalignment='top', horizontalalignment='right',
-                          bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
-        
-        ax.legend(loc='upper left')
-
-        def init():
-            """Inicializa a animação"""
-            capsule.set_data([], [])
-            plasma_trail.set_data([], [])
-            trajectory.set_data([], [])
-            info_text.set_text("")
-            return capsule, plasma_trail, trajectory, info_text
-
-        def animate(frame_idx):
-            """Atualiza o frame da animação"""
-            i = frame_indices[frame_idx] if frame_idx < len(frame_indices) else frame_indices[-1]
-            
-            current_altitude = self.y[i]
-            current_velocity = self.v[i]
-            current_time = self.t[i]
-            
-            # Cápsula (sempre no centro)
-            capsule.set_data([0], [current_altitude])
-            
-            # Esteira de plasma (visível apenas em alta velocidade)
-            if abs(current_velocity) > 2000 and current_altitude > 50000:
-                trail_length = min(1000, abs(current_velocity) * 0.1)
-                plasma_trail.set_data([0, 0], 
-                                    [current_altitude, current_altitude + trail_length])
-                plasma_trail.set_alpha(0.8)
-                plasma_trail.set_color('orange')
-            elif abs(current_velocity) > 1000:
-                plasma_trail.set_data([0, 0], 
-                                    [current_altitude, current_altitude + 500])
-                plasma_trail.set_alpha(0.6)
-                plasma_trail.set_color('yellow')
-            else:
-                plasma_trail.set_data([], [])
-            
-            # Trajetória (últimos 100 pontos)
-            start_idx = max(0, i - 100)
-            trajectory.set_data(np.zeros(i - start_idx + 1), self.y[start_idx:i+1])
-            
-            # Informações em tempo real
-            phase = "FASE INICIAL" if current_altitude > 80000 else \
-                   "REENTRADA CRÍTICA" if current_altitude > 40000 else \
-                   "FASE FINAL" if current_altitude > 10000 else "QUASE TERRA"
-            
-            # Temperatura estimada
-            temp = 300 + (abs(current_velocity)**3 * 1e-9)
-            
-            info_text.set_text(
-                f"Tempo: {current_time:.1f} s\n"
-                f"Altitude: {current_altitude:.0f} m\n"
-                f"Velocidade: {abs(current_velocity):.0f} m/s\n"
-                f"Temperatura: {temp:.0f} K\n"
-                f"Fase: {phase}\n"
-                f"Frame: {frame_idx+1}/{len(frame_indices)}"
-            )
-            
-            return capsule, plasma_trail, trajectory, info_text
-
-        # Cria a animação
-        ani = FuncAnimation(
-            fig, animate, frames=len(frame_indices),
-            init_func=init, interval=30, blit=True, repeat=True
+        # Usar utilitário de animação de reentrada
+        ani = AnimationUtils.criar_animacao_reentrada(
+            self.y, self.v, self.t, "REENTRADA ATMOSFÉRICA"
         )
         
-        plt.tight_layout()
+        # Notificar conclusão da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_CONCLUIDA',
+            'message': 'Animação de reentrada criada com sucesso'
+        })
+        
+        plt.show()
+        return ani
+
+    def criar_animacao_detalhada(self):
+        """Cria animação detalhada com múltiplos parâmetros"""
+        if self.y is None or self.v is None:
+            print("Erro: Execute a simulação primeiro.")
+            return
+        
+        print("Criando animação detalhada de reentrada...")
+        
+        # Notificar início da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_INICIADA',
+            'message': 'Criando animação detalhada de reentrada'
+        })
+        
+        # Calcular parâmetros adicionais
+        accelerations = np.diff(self.v) / self.dt
+        accelerations_g = np.abs(accelerations) / 9.81
+        
+        # Calcular temperaturas e números Mach
+        temperatures = []
+        mach_numbers = []
+        for i in range(len(self.y)):
+            temp = PhysicsUtils.temperatura_reatrada(abs(self.v[i]), self.y[i])
+            mach = PhysicsUtils.numero_mach(abs(self.v[i]), self.y[i])
+            temperatures.append(temp)
+            mach_numbers.append(mach)
+        
+        # Criar painel multigráfico
+        datasets = [
+            self.y,
+            np.abs(self.v),
+            accelerations_g if len(accelerations_g) > 0 else np.zeros(len(self.t)-1),
+            temperatures
+        ]
+        
+        titles = [
+            'Altitude vs Tempo',
+            'Velocidade vs Tempo',
+            'Aceleração vs Tempo (G)',
+            'Temperatura vs Tempo (K)'
+        ]
+        
+        ani = AnimationUtils.criar_painel_multigrafico(
+            self.t, datasets, titles, layout=(2, 2), figsize=(15, 10)
+        )
+        
+        # Notificar conclusão da animação
+        self.notify_simulation_update({
+            'status': 'ANIMACAO_CONCLUIDA',
+            'message': 'Animação detalhada criada com sucesso'
+        })
+        
         plt.show()
         return ani
 
@@ -194,7 +261,7 @@ RESULTADOS DA SIMULAÇÃO DE REENTRADA:
             print("Erro: Execute a simulação primeiro.")
             return
         
-        # Gráfico estático para debug
+        # Gráfico estático
         plt.figure(figsize=(10, 8))
         plt.plot(self.t, self.y, 'b-', linewidth=2)
         plt.xlabel('Tempo (s)')
@@ -243,3 +310,37 @@ RESULTADOS DA SIMULAÇÃO DE REENTRADA:
         
         plt.tight_layout()
         plt.show()
+
+    def _obter_resultados_json(self):
+        """Resultados específicos para reentrada em formato JSON"""
+        resultados = super()._obter_resultados_json()
+        
+        # Adiciona métricas calculadas específicas da reentrada
+        if self.y is not None and self.v is not None:
+            accelerations = np.diff(self.v) / self.dt
+            max_deceleration = np.max(np.abs(accelerations))
+            impact_velocity = self.v[-1] if len(self.v) > 0 else 0
+            
+            # Calcular temperaturas e números Mach
+            max_temperature = 0
+            max_mach = 0
+            for i in range(len(self.y)):
+                temp = PhysicsUtils.temperatura_reatrada(abs(self.v[i]), self.y[i])
+                mach = PhysicsUtils.numero_mach(abs(self.v[i]), self.y[i])
+                if temp > max_temperature:
+                    max_temperature = temp
+                if mach > max_mach:
+                    max_mach = mach
+            
+            resultados.update({
+                'initial_altitude': self.h0,
+                'initial_velocity': abs(self.v0),
+                'impact_velocity': abs(impact_velocity),
+                'max_deceleration_g': float(max_deceleration/9.81),
+                'max_temperature': float(max_temperature),
+                'max_mach_number': float(max_mach),
+                'total_time': float(self.t[-1]),
+                'final_altitude': float(self.y[-1])
+            })
+        
+        return resultados
