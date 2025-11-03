@@ -28,6 +28,8 @@ public class Missao {
     @Column(nullable = false)
     private StatusMissao status;
 
+    // --- RELACIONAMENTOS (EXISTENTES E NOVOS) ---
+
     @ManyToMany
     @JoinTable(
         name = "missao_astronauta",
@@ -54,25 +56,44 @@ public class Missao {
 
 
     /**
- * Método de Domínio para associar e validar a tripulação.
- * Delega a validação de aptidão para a própria entidade Astronauta (Coesão).
- * @param novosTripulantes a lista de astronautas a serem escalados.
- * @throws IllegalArgumentException se houver astronautas inaptos.
- */
-public void associarTripulacao(List<Astronauta> novosTripulantes) {
-    if (novosTripulantes == null || novosTripulantes.isEmpty()) {
-        throw new IllegalArgumentException("A tripulação de uma missão não pode ser vazia.");
+    * Método de Domínio para associar e validar a tripulação.
+    * Delega a validação de aptidão para a própria entidade Astronauta (Coesão).
+    * @param novosTripulantes a lista de astronautas a serem escalados.
+    * @throws IllegalArgumentException se houver astronautas inaptos.
+    */
+    public void associarTripulacao(List<Astronauta> novosTripulantes) {
+        if (novosTripulantes == null || novosTripulantes.isEmpty()) {
+            throw new IllegalArgumentException("A tripulação de uma missão não pode ser vazia.");
+        }
+        
+        List<Astronauta> astronautasInaptos = novosTripulantes.stream()
+            .filter(a -> !a.podeSerTripulante())
+            .collect(Collectors.toList());
+
+        if (!astronautasInaptos.isEmpty()) {
+            String nomes = astronautasInaptos.stream().map(Astronauta::getNome).collect(Collectors.joining(", "));
+            throw new IllegalArgumentException("Os seguintes astronautas estão inaptos para a missão: " + nomes + 
+                                               ". Verifique o status 'ativo' e o 'nível de aptidão médica'.");
+        }
+
+        this.tripulacao.clear();
+        this.tripulacao.addAll(novosTripulantes);
     }
     
-    // Filtra e coleta os inaptos, usando o método de domínio do Astronauta
-    List<Astronauta> astronautasInaptos = novosTripulantes.stream()
-        .filter(a -> !a.podeSerTripulante())
-        .collect(Collectors.toList());
-
-    if (!astronautasInaptos.isEmpty()) {
-        String nomes = astronautasInaptos.stream().map(Astronauta::getNome).collect(Collectors.joining(", "));
-        throw new IllegalArgumentException("Os seguintes astronautas estão inaptos para a missão: " + nomes + 
-                                           ". Verifique o status 'ativo' e o 'nível de aptidão médica'.");
+    /**
+     * NOVO: Método auxiliar para adicionar um evento à missão.
+     */
+    public void adicionarEvento(Evento evento) {
+        this.eventos.add(evento);
+        evento.setMissao(this);
+    }
+    
+    /**
+     * NOVO: Método auxiliar para adicionar uma simulação à missão.
+     */
+    public void adicionarSimulacao(Simulacao simulacao) {
+        this.simulacoes.add(simulacao);
+        simulacao.setMissao(this);
     }
     this.tripulacao.clear(); 
     this.tripulacao.addAll(novosTripulantes);
@@ -94,4 +115,16 @@ public void associarTripulacao(List<Astronauta> novosTripulantes) {
     public void setStatus(StatusMissao status) { this.status = status; }
     public List<Astronauta> getTripulacao() { return tripulacao; }
     public void setTripulacao(List<Astronauta> tripulacao) { this.tripulacao = tripulacao; }
+    
+    // Novos Getters e Setters
+    public OperadorDeMissao getOperadorResponsavel() { return operadorResponsavel; }
+    public void setOperadorResponsavel(OperadorDeMissao operadorResponsavel) { this.operadorResponsavel = operadorResponsavel; }
+    public Espaconave getEspaconave() { return espaconave; }
+    public void setEspaconave(Espaconave espaconave) { this.espaconave = espaconave; }
+    public List<Simulacao> getSimulacoes() { return simulacoes; }
+    public void setSimulacoes(List<Simulacao> simulacoes) { this.simulacoes = simulacoes; }
+    public List<ProtocoloEmergencial> getProtocolos() { return protocolos; }
+    public void setProtocolos(List<ProtocoloEmergencial> protocolos) { this.protocolos = protocolos; }
+    public List<Evento> getEventos() { return eventos; }
+    public void setEventos(List<Evento> eventos) { this.eventos = eventos; }
 }

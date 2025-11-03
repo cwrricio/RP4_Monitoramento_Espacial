@@ -4,7 +4,10 @@ import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.DadosBiometricos;
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 import com.MonitoramentoEspacial.interfaceExterna.AtualizaAstronautaRequest;
+import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest; // <- IMPORTAR
 import com.MonitoramentoEspacial.middleware.AstronautaRepository;
+import org.slf4j.Logger; // <- IMPORTAR
+import org.slf4j.LoggerFactory; // <- IMPORTAR
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +19,24 @@ import java.util.stream.Collectors;
 @Service("realAstronautaService")
 public class AstronautaService implements AstronautaServiceInterface {
 
+    private static final Logger log = LoggerFactory.getLogger(AstronautaService.class); // <- ADICIONAR LOGGER
+
     @Autowired
     private AstronautaRepository repository;
 
+
+    @Override
+    @Transactional
+    public AstronautaDTO criarAstronauta(CriarAstronautaRequest request) {
+        log.info("Iniciando criação do astronauta: {}", request.getNome());
+        
+        Astronauta novoAstronauta = AstronautaFactory.fromRequest(request);
+
+        Astronauta astronautaSalvo = repository.save(novoAstronauta);
+        log.info("Astronauta '{}' criado com sucesso com ID: {}", astronautaSalvo.getNome(), astronautaSalvo.getId());
+
+        return AstronautaMapper.toDTO(astronautaSalvo);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -46,24 +64,21 @@ public class AstronautaService implements AstronautaServiceInterface {
         Astronauta astronauta = repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Astronauta não encontrado com ID: " + id));
 
-        // Atualiza os dados principais do astronauta
         astronauta.setNome(request.getNome());
         astronauta.setIdade(request.getIdade());
         astronauta.setAtivo(request.getAtivo());
         astronauta.setNivelAptidaoMedica(request.getNivelAptidaoMedica());
         astronauta.setMissoesRealizadas(request.getMissoesRealizadas());
 
-        // MUDANÇA 3 (CORREÇÃO DE BUG): Lógica para atualizar os dados biométricos
         if (request.getTipoBiometria() != null && !request.getTipoBiometria().isBlank()) {
-            DadosBiometricos biometria = astronauta.getDadosBiometricos();
-            if (biometria == null) {
-                biometria = new DadosBiometricos();
-                astronauta.setDadosBiometricos(biometria);
-            }
-            biometria.setTipo(request.getTipoBiometria());
-            biometria.setValor(request.getValorBiometria());
-            biometria.setUnidade(request.getUnidadeBiometria());
-            biometria.setRegistradoEm(LocalDateTime.now());
+            
+            DadosBiometricos novoDadoBiometrico = new DadosBiometricos();
+            novoDadoBiometrico.setTipo(request.getTipoBiometria());
+            novoDadoBiometrico.setValor(request.getValorBiometria());
+            novoDadoBiometrico.setUnidade(request.getUnidadeBiometria());
+            novoDadoBiometrico.setRegistradoEm(LocalDateTime.now());
+            
+            astronauta.adicionarDadoBiometrico(novoDadoBiometrico);
         }
         
         Astronauta astronautaSalvo = repository.save(astronauta);

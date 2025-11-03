@@ -15,6 +15,10 @@ public class DadosBiometricos {
     private String unidade;
     private LocalDateTime registradoEm = LocalDateTime.now();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "astronauta_id")
+    private Astronauta astronauta;
+
     public Long getId() { return id; }
 
     public String getTipo() { return tipo; }
@@ -28,4 +32,13 @@ public class DadosBiometricos {
 
     public LocalDateTime getRegistradoEm() { return registradoEm; }
     public void setRegistradoEm(LocalDateTime registradoEm) { this.registradoEm = registradoEm; }
+
+    public Astronauta getAstronauta() {
+        return astronauta;
+    }
+
+    public void setAstronauta(Astronauta astronauta) {
+        this.astronauta = astronauta;
+    }
+
 }

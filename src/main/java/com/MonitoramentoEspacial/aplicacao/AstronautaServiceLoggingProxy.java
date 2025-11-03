@@ -2,6 +2,7 @@ package com.MonitoramentoEspacial.aplicacao;
 
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 import com.MonitoramentoEspacial.interfaceExterna.AtualizaAstronautaRequest;
+import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest; // <- IMPORTAR
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,14 +10,13 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
 /**
  * Implementação do Padrão de Projeto Proxy.
  * Esta classe intercepta as chamadas para o serviço de Astronauta, adiciona
  * logging e depois delega a execução para o serviço real.
  */
 @Service
-@Primary // Define este como o bean principal a ser injetado para a interface AstronautaServiceInterface
+@Primary
 public class AstronautaServiceLoggingProxy implements AstronautaServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(AstronautaServiceLoggingProxy.class);
@@ -24,6 +24,19 @@ public class AstronautaServiceLoggingProxy implements AstronautaServiceInterface
 
     public AstronautaServiceLoggingProxy(@Qualifier("realAstronautaService") AstronautaServiceInterface realAstronautaService) {
         this.realAstronautaService = realAstronautaService;
+    }
+
+    @Override
+    public AstronautaDTO criarAstronauta(CriarAstronautaRequest request) {
+        log.info("PROXY: Requisição para criar astronauta com nome: {}", request.getNome());
+        try {
+            AstronautaDTO resultado = realAstronautaService.criarAstronauta(request);
+            log.info("PROXY: Astronauta ID {} ('{}') criado com sucesso.", resultado.getId(), resultado.getNome());
+            return resultado;
+        } catch (Exception e) {
+            log.error("PROXY: Erro ao criar astronauta com nome {}: {}", request.getNome(), e.getMessage());
+            throw e;
+        }
     }
 
     @Override
