@@ -1,22 +1,42 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
-// MUDANÇA 1: Importar a INTERFACE em vez da classe concreta.
 import com.MonitoramentoEspacial.aplicacao.AstronautaServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder; // <- IMPORTAR
 
 import jakarta.validation.Valid;
+import java.net.URI; // <- IMPORTAR
 import java.util.List;
 
 @RestController
 @RequestMapping("/astronautas")
 public class AstronautaController {
-
-    // MUDANÇA 2: Injetar a interface. O Spring, por causa da anotação @Primary,
-    // injetará o Proxy aqui, que por sua vez usará o serviço real.
+    
     @Autowired
     private AstronautaServiceInterface astronautaService;
+
+    /**
+     * NOVO ENDPOINT
+     * Cria um novo astronauta.
+     * @param request Dados do astronauta.
+     * @return Resposta 201 Created com a localização do novo recurso.
+     */
+    @PostMapping
+    public ResponseEntity<AstronautaDTO> criar(@Valid @RequestBody CriarAstronautaRequest request) {
+        AstronautaDTO astronautaCriado = astronautaService.criarAstronauta(request);
+
+        // Gera a URI para o novo recurso (Ex: /astronautas/5)
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(astronautaCriado.getId())
+                .toUri();
+
+        // Retorna o status 201 Created
+        return ResponseEntity.created(location).body(astronautaCriado);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<AstronautaDTO> buscarPorId(@PathVariable Long id) {

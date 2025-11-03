@@ -4,7 +4,10 @@ import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.DadosBiometricos;
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 import com.MonitoramentoEspacial.interfaceExterna.AtualizaAstronautaRequest;
+import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest; // <- IMPORTAR
 import com.MonitoramentoEspacial.middleware.AstronautaRepository;
+import org.slf4j.Logger; // <- IMPORTAR
+import org.slf4j.LoggerFactory; // <- IMPORTAR
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,8 +19,23 @@ import java.util.stream.Collectors;
 @Service("realAstronautaService")
 public class AstronautaService implements AstronautaServiceInterface {
 
+    private static final Logger log = LoggerFactory.getLogger(AstronautaService.class); // <- ADICIONAR LOGGER
+
     @Autowired
     private AstronautaRepository repository;
+
+    @Override
+    @Transactional
+    public AstronautaDTO criarAstronauta(CriarAstronautaRequest request) {
+        log.info("Iniciando criação do astronauta: {}", request.getNome());
+        
+        Astronauta novoAstronauta = AstronautaFactory.fromRequest(request);
+
+        Astronauta astronautaSalvo = repository.save(novoAstronauta);
+        log.info("Astronauta '{}' criado com sucesso com ID: {}", astronautaSalvo.getNome(), astronautaSalvo.getId());
+
+        return AstronautaMapper.toDTO(astronautaSalvo);
+    }
 
     @Override
     @Transactional(readOnly = true)
