@@ -2,7 +2,6 @@ package com.MonitoramentoEspacial.interfaceExterna;
 
 import com.MonitoramentoEspacial.aplicacao.AstronautaServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder; // <- IMPORTAR
@@ -14,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/astronautas")
 public class AstronautaController {
+    
     @Autowired
     private AstronautaServiceInterface astronautaService;
 
@@ -43,13 +43,6 @@ public class AstronautaController {
         return ResponseEntity.ok(astronautaService.buscarPorId(id));
     }
 
-    @PostMapping
-    public ResponseEntity<AstronautaDTO> criar(
-            @Valid @RequestBody AtualizaAstronautaRequest request
-    ) {
-        AstronautaDTO novoAstronauta = astronautaService.criarAstronauta(request); 
-        return ResponseEntity.status(HttpStatus.CREATED).body(novoAstronauta);
-    }
     @GetMapping
     public ResponseEntity<List<AstronautaDTO>> listarTodos(@RequestParam(required = false) String nome) {
         return ResponseEntity.ok(astronautaService.listarAstronautas(nome));

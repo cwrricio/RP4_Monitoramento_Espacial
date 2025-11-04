@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 @Table(name = "missao")
 public class Missao {
 
-    //  atributos e anotações Jpa 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,10 +37,66 @@ public class Missao {
     )
     private List<Astronauta> tripulacao = new ArrayList<>();
     
+    /**
+     * NOVO: Relacionamento com OperadorDeMissao.
+     * Muitas missões podem ser gerenciadas por um operador.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operador_id")
+    private OperadorDeMissao operadorResponsavel;
+
+    /**
+     * NOVO: Relacionamento com Espaconave.
+     * Muitas missões podem usar a mesma espaçonave.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "espaconave_id")
+    private Espaconave espaconave;
+
+    /**
+     * NOVO: Relacionamento com Simulacao.
+     * Uma missão pode ter várias simulações.
+     * CascadeType.ALL: Se a missão for deletada, suas simulações também são.
+     * orphanRemoval = true: Se uma simulação for removida desta lista, ela é deletada do banco.
+     */
+    @OneToMany(
+        mappedBy = "missao",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private List<Simulacao> simulacoes = new ArrayList<>();
+    
+    /**
+     * NOVO: Relacionamento com ProtocoloEmergencial.
+     */
+    @OneToMany(
+        mappedBy = "missao",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private List<ProtocoloEmergencial> protocolos = new ArrayList<>();
+
+    /**
+     * NOVO: Relacionamento com Evento.
+     */
+    @OneToMany(
+        mappedBy = "missao",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private List<Evento> eventos = new ArrayList<>();
+
+    // Construtor vazio para JPA
     public Missao() {}
 
-    // METODOS DE DOMÍNIO - Enriquecendo o modelo
-   
+
+    // ----------------------------------------------------
+    // METODOS DE DOMÍNIO (Comportamento)
+    // ----------------------------------------------------
+
     /**
      * Inicia a simulação, alterando o status e registrando a data.
      * @throws IllegalStateException se a missão não estiver PLANEJADA.
@@ -95,11 +150,18 @@ public class Missao {
         this.simulacoes.add(simulacao);
         simulacao.setMissao(this);
     }
-    this.tripulacao.clear(); 
-    this.tripulacao.addAll(novosTripulantes);
-}
 
-    // Getters e Setters para JPA
+    /**
+     * NOVO: Método auxiliar para adicionar um protocolo à missão.
+     */
+    public void adicionarProtocolo(ProtocoloEmergencial protocolo) {
+        this.protocolos.add(protocolo);
+        protocolo.setMissao(this);
+    }
+    
+    // ----------------------------------------------------
+    // Getters e Setters
+    // ----------------------------------------------------
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
