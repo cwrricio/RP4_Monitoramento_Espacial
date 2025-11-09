@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Rocket, User, Menu, X } from "lucide-react"
+import { Rocket, User, Menu, X, Ship, Headset } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -10,6 +10,8 @@ import { useState } from "react"
 const navigation = [
   { name: "Missões", href: "/", icon: Rocket },
   { name: "Astronautas", href: "/astronautas", icon: User },
+  { name: "Espaçonaves", href: "/espaconaves", icon: Ship },
+  { name: "Operadores", href: "/operadores", icon: Headset },
 ]
 
 export function Sidebar() {

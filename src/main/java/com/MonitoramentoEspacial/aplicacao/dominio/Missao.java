@@ -142,6 +142,38 @@ public class Missao {
         this.eventos.add(evento);
         evento.setMissao(this);
     }
+
+    public void concluirMissao() {
+        if (this.status != StatusMissao.EM_ANDAMENTO) {
+            throw new IllegalStateException("A missão só pode ser concluída se estiver EM_ANDAMENTO.");
+        }
+        this.status = StatusMissao.CONCLUIDA;
+        this.dataFim = LocalDate.now();
+        
+        Evento evento = new Evento();
+        evento.setTipo(TipoEvento.INFO);
+        evento.setDescricao("Missão concluída com sucesso.");
+        this.adicionarEvento(evento);
+    }
+
+    public ProtocoloEmergencial acionarProtocolo(TipoProtocolo tipo, String descricao) {
+        if (this.status != StatusMissao.EM_ANDAMENTO) {
+            throw new IllegalStateException("Protocolos só podem ser acionados em missões EM_ANDAMENTO.");
+        }
+        
+        ProtocoloEmergencial protocolo = new ProtocoloEmergencial();
+        protocolo.setTipo(tipo);
+        protocolo.setDescricao(descricao);
+        protocolo.setAcionadoEm(java.time.LocalDateTime.now());
+        this.adicionarProtocolo(protocolo); 
+
+        Evento evento = new Evento();
+        evento.setTipo(TipoEvento.ALERTA); 
+        evento.setDescricao("Protocolo de emergência acionado: " + tipo + ". Motivo: " + descricao);
+        this.adicionarEvento(evento);
+
+        return protocolo;
+    }
     
     /**
      * NOVO: Método auxiliar para adicionar uma simulação à missão.

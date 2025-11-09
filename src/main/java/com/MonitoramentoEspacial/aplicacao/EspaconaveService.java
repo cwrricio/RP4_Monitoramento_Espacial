@@ -18,16 +18,23 @@ public class EspaconaveService implements EspaconaveServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(EspaconaveService.class);
 
+    private final EspaconaveRepository repository;
+    private final EspaconaveMapper espaconaveMapper; // Injetado
+
     @Autowired
-    private EspaconaveRepository repository;
+    public EspaconaveService(EspaconaveRepository repository, EspaconaveMapper espaconaveMapper) {
+        this.repository = repository;
+        this.espaconaveMapper = espaconaveMapper;
+    }
 
     @Override
     @Transactional
     public EspaconaveDTO criarEspaconave(SalvarEspaconaveRequest request) {
         log.info("Criando nova espaçonave: {}", request.getNome());
-        Espaconave espaconave = EspaconaveMapper.fromRequest(request);
+        // MODIFICADO: Usa o mapper
+        Espaconave espaconave = espaconaveMapper.toEntity(request);
         Espaconave salva = repository.save(espaconave);
-        return EspaconaveMapper.toDTO(salva);
+        return espaconaveMapper.toDTO(salva);
     }
 
     @Override
@@ -42,7 +49,7 @@ public class EspaconaveService implements EspaconaveServiceInterface {
         espaconave.setStatusOperacional(request.getStatusOperacional());
         
         Espaconave salva = repository.save(espaconave);
-        return EspaconaveMapper.toDTO(salva);
+        return espaconaveMapper.toDTO(salva);
     }
 
     @Override
@@ -50,7 +57,7 @@ public class EspaconaveService implements EspaconaveServiceInterface {
     public EspaconaveDTO buscarPorId(Long id) {
         Espaconave espaconave = repository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Espaçonave não encontrada com ID: " + id));
-        return EspaconaveMapper.toDTO(espaconave);
+        return espaconaveMapper.toDTO(espaconave);
     }
 
     @Override
@@ -63,7 +70,7 @@ public class EspaconaveService implements EspaconaveServiceInterface {
             lista = repository.findAll();
         }
         return lista.stream()
-            .map(EspaconaveMapper::toDTO)
+            .map(espaconaveMapper::toDTO) // MODIFICADO: Usa o mapper
             .collect(Collectors.toList());
     }
 

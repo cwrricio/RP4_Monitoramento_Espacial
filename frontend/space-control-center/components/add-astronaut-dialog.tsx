@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,175 +14,145 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AtualizaAstronautaRequest, AstronautaDTO } from "@/lib/api" // Importar tipos
-import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { AstronautAPI, type CreateAstronautRequest } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 interface AddAstronautDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: AtualizaAstronautaRequest) => Promise<any>
-  astronautData?: AstronautaDTO | null; // Dados para edição
-  isEditMode?: boolean;
+  onSuccess?: () => void
 }
 
-export function AddAstronautDialog({
-   open,
-   onOpenChange,
-   onSubmit,
-   astronautData = null, // Valor padrão
-   isEditMode = false
-}: AddAstronautDialogProps) {
-  const [formData, setFormData] = useState<Partial<AtualizaAstronautaRequest>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Inicializa ou reseta o formulário
-  useEffect(() => {
-    if (open) {
-      setFormData({
-        nome: astronautData?.nome ?? "",
-        idade: astronautData?.idade ?? undefined,
-        ativo: astronautData?.ativo ?? true,
-        nivelAptidaoMedica: astronautData?.nivelAptidaoMedica ?? "MEDIO", // Default razoável
-        missoesRealizadas: astronautData?.missoesRealizadas ?? 0,
-        // Campos de biometria podem ser adicionados aqui se necessário
-      });
-       setErrors({});
-       setIsSubmitting(false);
-    }
-  }, [open, astronautData]);
-
-  const handleInputChange = (field: keyof AtualizaAstronautaRequest, value: string | number | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-     if (errors[field]) {
-       setErrors(prev => ({...prev, [field]: ''}));
-     }
-  }
-
-  const validateForm = (): boolean => {
-     const newErrors: Record<string, string> = {};
-     if (!formData.nome || formData.nome.length < 2) newErrors.nome = "Nome inválido (mín. 2 caracteres).";
-     if (formData.idade === undefined || formData.idade < 18 || formData.idade > 100) newErrors.idade = "Idade inválida (18-100).";
-     if (!formData.nivelAptidaoMedica) newErrors.nivelAptidaoMedica = "Nível de aptidão é obrigatório.";
-     if (formData.missoesRealizadas === undefined || formData.missoesRealizadas < 0) newErrors.missoesRealizadas = "Número de missões inválido.";
-
-     setErrors(newErrors);
-     return Object.keys(newErrors).length === 0;
-   };
+export function AddAstronautDialog({ open, onOpenChange, onSuccess }: AddAstronautDialogProps) {
+  const [nome, setNome] = useState("")
+  const [idade, setIdade] = useState("")
+  const [nivelAptidaoMedica, setNivelAptidaoMedica] = useState<"ALTO" | "MEDIO" | "BAIXO">("MEDIO")
+  const [missoesRealizadas, setMissoesRealizadas] = useState("0")
+  const [ativo, setAtivo] = useState("true")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      // Garante que todos os campos não opcionais da API estão presentes
-      const payload: AtualizaAstronautaRequest = {
-        nome: formData.nome!,
-        idade: Number(formData.idade!),
-        ativo: formData.ativo!,
-        nivelAptidaoMedica: formData.nivelAptidaoMedica!,
-        missoesRealizadas: Number(formData.missoesRealizadas!),
-        // Adicione campos de biometria se foram incluídos no formulário
-      };
-      await onSubmit(payload);
-      // Fechar o dialog é responsabilidade do componente pai após o sucesso
-    } catch (error) {
-       console.error("Erro no submit do dialog:", error);
-    } finally {
-      setIsSubmitting(false);
+    if (!nome || !idade) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      })
+      return
     }
-  };
+
+    setIsSubmitting(true)
+    try {
+      const data: CreateAstronautRequest = {
+        nome,
+        idade: Number.parseInt(idade),
+        ativo: ativo === "true",
+        nivelAptidaoMedica,
+        missoesRealizadas: Number.parseInt(missoesRealizadas),
+      }
+
+      await AstronautAPI.criar(data)
+
+      toast({
+        title: "Sucesso",
+        description: "Astronauta criado com sucesso!",
+      })
+
+      onOpenChange(false)
+      onSuccess?.()
+
+      // Reset form
+      setNome("")
+      setIdade("")
+      setNivelAptidaoMedica("MEDIO")
+      setMissoesRealizadas("0")
+      setAtivo("true")
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao criar astronauta. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Editar Astronauta" : "Adicionar Novo Astronauta"}</DialogTitle>
-          <DialogDescription>
-             {isEditMode ? "Atualize as informações do membro." : "Insira as informações do novo membro."}
-          </DialogDescription>
+          <DialogTitle>Adicionar Novo Astronauta</DialogTitle>
+          <DialogDescription>Insira as informações do novo membro.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="fullname">Nome Completo *</Label>
+            <Label htmlFor="nome">Nome Completo</Label>
             <Input
-              id="fullname"
+              id="nome"
               placeholder="Ex: Dra. Elena Petrova"
-              value={formData.nome || ""}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
-              className={cn(errors.nome && "border-destructive")}
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
             />
-             {errors.nome && <p className="text-sm text-destructive">{errors.nome}</p>}
           </div>
-           <div className="grid gap-2">
-            <Label htmlFor="idade">Idade *</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="idade">Idade</Label>
             <Input
               id="idade"
               type="number"
               placeholder="Ex: 35"
-              value={formData.idade ?? ""}
-              onChange={(e) => handleInputChange("idade", Number(e.target.value))}
-               className={cn(errors.idade && "border-destructive")}
+              value={idade}
+              onChange={(e) => setIdade(e.target.value)}
             />
-             {errors.idade && <p className="text-sm text-destructive">{errors.idade}</p>}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="aptidao">Nível Aptidão Médica *</Label>
-            <Select
-               value={formData.nivelAptidaoMedica || ""}
-               onValueChange={(value: string) => handleInputChange("nivelAptidaoMedica", value)}
-            >
-              <SelectTrigger id="aptidao" className={cn(errors.nivelAptidaoMedica && "border-destructive")}>
-                <SelectValue placeholder="Selecione o nível" />
+            <Label htmlFor="nivelAptidao">Nível Aptidão Médica</Label>
+            <Select value={nivelAptidaoMedica} onValueChange={(value: any) => setNivelAptidaoMedica(value)}>
+              <SelectTrigger id="nivelAptidao">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALTO">Alto</SelectItem>
                 <SelectItem value="MEDIO">Médio</SelectItem>
                 <SelectItem value="BAIXO">Baixo</SelectItem>
-                 {/* Adicione outros níveis se existirem no backend */}
               </SelectContent>
             </Select>
-             {errors.nivelAptidaoMedica && <p className="text-sm text-destructive">{errors.nivelAptidaoMedica}</p>}
           </div>
-           <div className="grid gap-2">
-            <Label htmlFor="missoes">Missões Realizadas *</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="missoes">Missões Realizadas</Label>
             <Input
               id="missoes"
               type="number"
-              min="0"
-              placeholder="Ex: 5"
-              value={formData.missoesRealizadas ?? ""}
-              onChange={(e) => handleInputChange("missoesRealizadas", Number(e.target.value))}
-               className={cn(errors.missoesRealizadas && "border-destructive")}
+              placeholder="0"
+              value={missoesRealizadas}
+              onChange={(e) => setMissoesRealizadas(e.target.value)}
             />
-             {errors.missoesRealizadas && <p className="text-sm text-destructive">{errors.missoesRealizadas}</p>}
           </div>
           <div className="grid gap-3">
-            <Label>Status *</Label>
-            <RadioGroup
-              value={formData.ativo ? "active" : "inactive"}
-              onValueChange={(value: String) => handleInputChange("ativo", value === "active")}
-            >
+            <Label>Status</Label>
+            <RadioGroup value={ativo} onValueChange={setAtivo}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="active" id="active" />
-                <Label htmlFor="active" className="font-normal cursor-pointer"> Ativo </Label>
+                <RadioGroupItem value="true" id="active" />
+                <Label htmlFor="active" className="font-normal cursor-pointer">
+                  Ativo
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="inactive" id="inactive" />
-                <Label htmlFor="inactive" className="font-normal cursor-pointer"> Inativo </Label>
+                <RadioGroupItem value="false" id="inactive" />
+                <Label htmlFor="inactive" className="font-normal cursor-pointer">
+                  Inativo
+                </Label>
               </div>
             </RadioGroup>
           </div>
-          {/* Adicionar campos de Biometria aqui se necessário */}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             {isSubmitting ? "Salvando..." : (isEditMode ? "Salvar Alterações" : "Adicionar Astronauta")}
+            {isSubmitting ? "Salvando..." : "Salvar Astronauta"}
           </Button>
         </DialogFooter>
       </DialogContent>

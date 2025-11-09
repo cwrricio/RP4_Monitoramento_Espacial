@@ -18,16 +18,23 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
 
     private static final Logger log = LoggerFactory.getLogger(OperadorDeMissaoService.class);
 
+    private final OperadorDeMissaoRepository repository;
+    private final OperadorDeMissaoMapper operadorMapper; // Injetado
+
     @Autowired
-    private OperadorDeMissaoRepository repository;
+    public OperadorDeMissaoService(OperadorDeMissaoRepository repository, OperadorDeMissaoMapper operadorMapper) {
+        this.repository = repository;
+        this.operadorMapper = operadorMapper;
+    }
 
     @Override
     @Transactional
     public OperadorDeMissaoDTO criarOperador(CriarOperadorRequest request) {
         log.info("Criando novo operador: {}", request.getNome());
-        OperadorDeMissao operador = OperadorDeMissaoFactory.fromRequest(request);
+        // MODIFICADO: Usa o mapper
+        OperadorDeMissao operador = operadorMapper.toEntity(request);
         OperadorDeMissao salvo = repository.save(operador);
-        return OperadorDeMissaoMapper.toDTO(salvo);
+        return operadorMapper.toDTO(salvo);
     }
 
     @Override
@@ -35,7 +42,7 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
     public OperadorDeMissaoDTO buscarPorId(Long id) {
         OperadorDeMissao operador = repository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Operador não encontrado com ID: " + id));
-        return OperadorDeMissaoMapper.toDTO(operador);
+        return operadorMapper.toDTO(operador);
     }
 
     @Override
@@ -48,7 +55,7 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
             operadores = repository.findAll();
         }
         return operadores.stream()
-            .map(OperadorDeMissaoMapper::toDTO)
+            .map(operadorMapper::toDTO) // MODIFICADO: Usa o mapper
             .collect(Collectors.toList());
     }
 

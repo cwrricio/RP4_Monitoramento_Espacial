@@ -14,7 +14,7 @@ public class SalvarEspaconaveRequest {
 
     @NotNull
     @Min(value = 1, message = "Capacidade deve ser ao menos 1")
-    private Integer capacidadeTripulacao;
+    private Integer capacidade;
 
     @NotBlank(message = "Status operacional não pode ser vazio")
     private String statusOperacional;
@@ -22,8 +22,8 @@ public class SalvarEspaconaveRequest {
     // Getters e Setters
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
-    public Integer getCapacidadeTripulacao() { return capacidadeTripulacao; }
-    public void setCapacidadeTripulacao(Integer capacidadeTripulacao) { this.capacidadeTripulacao = capacidadeTripulacao; }
+    public Integer getCapacidadeTripulacao() { return capacidade; }
+    public void setCapacidadeTripulacao(Integer capacidadeTripulacao) { this.capacidade = capacidadeTripulacao; }
     public String getStatusOperacional() { return statusOperacional; }
     public void setStatusOperacional(String statusOperacional) { this.statusOperacional = statusOperacional; }
 }
