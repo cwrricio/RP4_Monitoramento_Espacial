@@ -3,20 +3,40 @@ package com.MonitoramentoEspacial.aplicacao;
 import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.DadosBiometricos;
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
-
+import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest;
+import org.mapstruct.Mapper;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Optional;
 
-public class AstronautaMapper {
+/**
+ * Mapper (via MapStruct) para conversão entre Entidades Astronauta e DTOs.
+ * componentModel = "spring" torna esta interface um Bean gerenciado pelo Spring.
+ */
+@Mapper(componentModel = "spring")
+public interface AstronautaMapper {
 
-    public static AstronautaDTO toDTO(Astronauta astronauta) {
+    /**
+     * Converte o DTO de criação em uma Entidade.
+     * O MapStruct implementa este método automaticamente.
+     */
+    Astronauta toEntity(CriarAstronautaRequest request);
 
-        // Boa prática: inicializar com valores padrão para evitar NullPointerException no DTO
+    /**
+     * Converte a Entidade em um DTO de resposta.
+     * Como a lógica de biometria é complexa (pegar o último registro),
+     * implementamos como um 'default method'. O MapStruct usará esta implementação.
+     */
+    default AstronautaDTO toDTO(Astronauta astronauta) {
+        if (astronauta == null) {
+            return null;
+        }
+
+        // Lógica de negócio original para buscar o dado biométrico mais recente
         String tipo = null;
         String valor = null;
         String unidade = null;
-        java.time.LocalDateTime registradoEm = null;
+        LocalDateTime registradoEm = null;
 
         Optional<DadosBiometricos> ultimoDado = astronauta.getDadosBiometricos().stream()
                 .max(Comparator.comparing(DadosBiometricos::getRegistradoEm));
@@ -29,6 +49,7 @@ public class AstronautaMapper {
             registradoEm = biometria.getRegistradoEm();
         }
 
+        // Retorna o DTO construído
         return new AstronautaDTO(
                 astronauta.getId(),
                 astronauta.getNome(),
@@ -42,5 +63,4 @@ public class AstronautaMapper {
                 registradoEm
         );
     }
-
 }

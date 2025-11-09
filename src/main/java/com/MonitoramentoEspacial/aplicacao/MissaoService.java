@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,17 +19,26 @@ public class MissaoService implements MissaoServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(MissaoService.class);
 
+  
+    private final MissaoRepository missaoRepository;
+    private final AstronautaRepository astronautaRepository;
+    private final MissaoMapper missaoMapper; 
+
     @Autowired
-    private MissaoRepository missaoRepository;
-    @Autowired
-    private AstronautaRepository astronautaRepository;
+    public MissaoService(MissaoRepository missaoRepository, 
+                         AstronautaRepository astronautaRepository, 
+                         MissaoMapper missaoMapper) {
+        this.missaoRepository = missaoRepository;
+        this.astronautaRepository = astronautaRepository;
+        this.missaoMapper = missaoMapper;
+    }
 
     @Override
     @Transactional
     public MissaoDTO criarMissao(CriarMissaoRequest request) {
         log.info("Iniciando processo de criação de missão: {}", request.getNome());
 
-        Missao missao = MissaoFactory.fromRequest(request);
+        Missao missao = missaoMapper.toEntity(request);
 
         if (request.getTripulacaoIds() != null && !request.getTripulacaoIds().isEmpty()) {
             List<Astronauta> tripulacao = astronautaRepository.findAllById(request.getTripulacaoIds());
@@ -44,7 +52,7 @@ public class MissaoService implements MissaoServiceInterface {
         Missao missaoSalva = missaoRepository.save(missao);
         log.info("Missão '{}' criada com sucesso com ID: {}", missaoSalva.getNome(), missaoSalva.getId());
 
-        return MissaoMapper.toDTO(missaoSalva);
+        return missaoMapper.toDTO(missaoSalva);
     }
 
     @Override
@@ -52,14 +60,15 @@ public class MissaoService implements MissaoServiceInterface {
     public MissaoDTO buscarPorId(Long id) {
         Missao missao = missaoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Missão não encontrada"));
-        return MissaoMapper.toDTO(missao);
+        
+        return missaoMapper.toDTO(missao);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MissaoDTO> listarTodas() {
         return missaoRepository.findAll().stream()
-                .map(MissaoMapper::toDTO)
+                .map(missaoMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -85,6 +94,7 @@ public class MissaoService implements MissaoServiceInterface {
         
         Missao missaoSalva = missaoRepository.save(missao);
         log.info("Simulação iniciada. Status da missão: {}", missaoSalva.getStatus());
-        return MissaoMapper.toDTO(missaoSalva);
+        
+        return missaoMapper.toDTO(missaoSalva);
     }
 }
