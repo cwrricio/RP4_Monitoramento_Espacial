@@ -1,275 +1,394 @@
+# utils/animation.py - Versão Simplificada e Robusta
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import numpy as np
+import os
+from datetime import datetime
+
+# Verificar se Pillow está instalado
+try:
+    from matplotlib.animation import PillowWriter
+    PILLOW_AVAILABLE = True
+except ImportError:
+    PILLOW_AVAILABLE = False
+    print("⚠️  Pillow não instalado. Execute: pip install pillow")
+
+# Verificar se FFmpeg está disponível
+try:
+    from matplotlib.animation import FFMpegWriter
+    FFMPEG_AVAILABLE = True
+except ImportError:
+    FFMPEG_AVAILABLE = False
+
 
 class AnimationUtils:
-    """Utilitários para criação de animações"""
+    """Utilitários para criar e salvar animações"""
     
     @staticmethod
-    def criar_animacao_padrao(times, values, title, xlabel, ylabel, interval=30):
+    def salvar_animacao(ani, filename=None, formato='gif', fps=30, dpi=100):
         """
-        Cria uma animação padrão para dados temporais
+        Salva uma animação em arquivo
         
-        Args:
-            times: array de tempos
-            values: array de valores
-            title: título do gráfico
-            xlabel: label do eixo x
-            ylabel: label do eixo y
-            interval: intervalo entre frames (ms)
+        Parâmetros:
+        -----------
+        ani : FuncAnimation
+            Objeto de animação do matplotlib
+        filename : str, opcional
+            Nome do arquivo (sem extensão). Se None, usa timestamp
+        formato : str
+            'gif' ou 'mp4'
+        fps : int
+            Frames por segundo
+        dpi : int
+            Resolução da animação
+        
+        Retorna:
+        --------
+        str : Caminho completo do arquivo salvo, ou None se falhar
         """
+        # Verificar se animação é válida
+        if ani is None:
+            print("❌ Erro: Objeto de animação é None")
+            return None
+        
+        # Criar diretório de saída
+        output_dir = "animacoes"
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"📁 Diretório: {output_dir}/")
+        except Exception as e:
+            print(f"❌ Erro ao criar diretório: {e}")
+            return None
+        
+        # Gerar nome de arquivo
+        if filename is None:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"animacao_{timestamp}"
+        
+        # Remover extensão se já tiver
+        filename = filename.replace('.gif', '').replace('.mp4', '')
+        
+        # Processar formato
+        formato = formato.lower().strip()
+        
+        if formato == 'gif':
+            if not PILLOW_AVAILABLE:
+                print("❌ Pillow não está instalado!")
+                print("   Execute: pip install pillow")
+                return None
+            
+            filepath = os.path.join(output_dir, f"{filename}.gif")
+            writer = PillowWriter(fps=fps)
+            print(f"💾 Salvando GIF: {filename}.gif")
+            print(f"   FPS: {fps}, DPI: {dpi}")
+            
+        elif formato == 'mp4':
+            if not FFMPEG_AVAILABLE:
+                print("❌ FFmpeg não está disponível!")
+                print("   Instale FFmpeg e tente novamente, ou use formato='gif'")
+                return None
+            
+            filepath = os.path.join(output_dir, f"{filename}.mp4")
+            writer = FFMpegWriter(fps=fps, metadata=dict(artist='SimulacaoPython'))
+            print(f"💾 Salvando MP4: {filename}.mp4")
+            print(f"   FPS: {fps}, DPI: {dpi}")
+            
+        else:
+            print(f"❌ Formato '{formato}' inválido. Use 'gif' ou 'mp4'")
+            return None
+        
+        # Salvar arquivo
+        try:
+            print("⏳ Processando... (isso pode levar 10-60 segundos)")
+            print("   Não feche a janela!")
+            
+            ani.save(filepath, writer=writer, dpi=dpi)
+            
+            # Verificar se arquivo foi criado
+            if os.path.exists(filepath):
+                tamanho_kb = os.path.getsize(filepath) / 1024
+                print(f"✅ SUCESSO! Animação salva!")
+                print(f"   📂 Local: {filepath}")
+                print(f"   📊 Tamanho: {tamanho_kb:.1f} KB")
+                return filepath
+            else:
+                print(f"❌ Erro: Arquivo não foi criado em {filepath}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Erro ao salvar animação: {e}")
+            print(f"   Tipo do erro: {type(e).__name__}")
+            
+            if formato == 'mp4':
+                print("\n💡 Dica: Tente usar formato='gif' em vez de 'mp4'")
+            
+            # Mostrar traceback completo para debug
+            import traceback
+            print("\nDetalhes do erro:")
+            traceback.print_exc()
+            
+            return None
+    
+    @staticmethod
+    def criar_animacao_padrao(t, y, title, xlabel, ylabel, interval=30):
+        """
+        Cria animação padrão de gráfico de linha
+        
+        Parâmetros:
+        -----------
+        t : array
+            Dados do eixo X (tempo)
+        y : array
+            Dados do eixo Y (valores)
+        title : str
+            Título do gráfico
+        xlabel : str
+            Label do eixo X
+        ylabel : str
+            Label do eixo Y
+        interval : int
+            Intervalo entre frames em milissegundos
+        
+        Retorna:
+        --------
+        FuncAnimation : Objeto de animação
+        """
+        print(f"🎬 Criando animação: {title}")
+        print(f"   Frames: {len(t)}, Intervalo: {interval}ms")
+        
+        # Criar figura
         fig, ax = plt.subplots(figsize=(10, 6))
-        
-        # Configuração inicial
-        ax.set_xlim(0, np.max(times))
-        ax.set_ylim(np.min(values) * 0.95, np.max(values) * 1.05)
-        ax.set_title(title, fontsize=14, fontweight='bold')
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.grid(True, alpha=0.3)
-        
-        # Elementos da animação
         line, = ax.plot([], [], 'b-', linewidth=2)
-        point, = ax.plot([], [], 'ro', markersize=8)
         
-        # Texto informativo
-        info_text = ax.text(0.02, 0.98, "", transform=ax.transAxes, fontsize=10,
-                          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        # Configurar limites
+        x_margin = (np.max(t) - np.min(t)) * 0.05
+        y_margin = (np.max(y) - np.min(y)) * 0.1
+        
+        ax.set_xlim(np.min(t) - x_margin, np.max(t) + x_margin)
+        ax.set_ylim(np.min(y) - y_margin, np.max(y) + y_margin)
+        ax.set_xlabel(xlabel, fontsize=12)
+        ax.set_ylabel(ylabel, fontsize=12)
+        ax.set_title(title, fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3)
         
         def init():
             line.set_data([], [])
-            point.set_data([], [])
-            info_text.set_text("")
-            return line, point, info_text
+            return line,
         
         def animate(i):
-            line.set_data(times[:i+1], values[:i+1])
-            point.set_data([times[i]], [values[i]])
-            info_text.set_text(f"Tempo: {times[i]:.1f} s\nValor: {values[i]:.1f}")
-            return line, point, info_text
+            line.set_data(t[:i], y[:i])
+            return line,
         
-        ani = FuncAnimation(fig, animate, frames=len(times),
-                          init_func=init, interval=interval, blit=True, repeat=True)
+        ani = FuncAnimation(fig, animate, init_func=init,
+                          frames=len(t), interval=interval,
+                          blit=True, repeat=True)
         
-        plt.tight_layout()
+        print("✅ Animação criada!")
         return ani
     
     @staticmethod
-    def criar_animacao_orbita(positions, times, title="Simulação Orbital"):
+    def criar_animacao_orbita(positions, times, title):
         """
-        Cria animação para trajetória orbital 2D
+        Cria animação orbital 2D
         
-        Args:
-            positions: array de posições [x, y]
-            times: array de tempos
-            title: título da animação
+        Parâmetros:
+        -----------
+        positions : array (N, 2)
+            Posições [x, y] do satélite
+        times : array
+            Tempo em cada posição
+        title : str
+            Título da animação
+        
+        Retorna:
+        --------
+        FuncAnimation : Objeto de animação
         """
+        print(f"🛰️  Criando animação orbital: {title}")
+        print(f"   Frames: {len(times)}")
+        
+        from matplotlib.patches import Circle
+        
         fig, ax = plt.subplots(figsize=(10, 10))
         
-        # Calcular limites do gráfico
-        max_range = 1.3 * np.max(np.linalg.norm(positions, axis=1))
-        ax.set_xlim(-max_range, max_range)
-        ax.set_ylim(-max_range, max_range)
+        R_EARTH = 6371000
+        trail, = ax.plot([], [], 'b-', alpha=0.3, linewidth=1, label='Trajetória')
+        satellite, = ax.plot([], [], 'ro', markersize=8, label='Satélite')
+        
+        earth = Circle((0, 0), R_EARTH, color='blue', alpha=0.6, label='Terra')
+        ax.add_patch(earth)
+        
+        max_r = np.max(np.linalg.norm(positions, axis=1))
+        ax.set_xlim(-max_r * 1.2, max_r * 1.2)
+        ax.set_ylim(-max_r * 1.2, max_r * 1.2)
         ax.set_aspect('equal')
-        ax.set_title(title, fontsize=16, fontweight='bold')
-        ax.set_xlabel("Posição X (m)")
-        ax.set_ylabel("Posição Y (m)")
-        ax.grid(True, alpha=0.3)
-        
-        # Terra
-        from matplotlib.patches import Circle
-        terra = Circle((0, 0), 6.371e6, color='blue', alpha=0.6, label='Terra')
-        ax.add_patch(terra)
-        
-        # Elementos da animação
-        satelite, = ax.plot([], [], 'ro', markersize=8, markeredgecolor='darkred', 
-                           markerfacecolor='red', label='Satélite')
-        trajetoria, = ax.plot([], [], 'r-', alpha=0.6, linewidth=2, label='Trajetória')
-        
+        ax.set_xlabel("Posição X (m)", fontsize=12)
+        ax.set_ylabel("Posição Y (m)", fontsize=12)
+        ax.set_title(title, fontsize=14, fontweight='bold')
         ax.legend(loc='upper right')
-        
-        # Texto informativo
-        info_text = ax.text(0.02, 0.98, "", transform=ax.transAxes, fontsize=11,
-                          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-        
-        def init():
-            satelite.set_data([], [])
-            trajetoria.set_data([], [])
-            info_text.set_text("")
-            return satelite, trajetoria, info_text
-        
-        def animate(i):
-            x, y = positions[i]
-            satelite.set_data([x], [y])
-            
-            # Mostrar apenas os últimos 20% da trajetória para performance
-            start_idx = max(0, i - len(positions) // 5)
-            trajetoria.set_data(positions[start_idx:i+1, 0], positions[start_idx:i+1, 1])
-            
-            info_text.set_text(f"Tempo: {times[i]:.1f} s\n"
-                             f"Posição: ({x:.0f}, {y:.0f}) m\n"
-                             f"Altitude: {np.linalg.norm(positions[i]) - 6.371e6:.0f} m")
-            
-            return satelite, trajetoria, info_text
-        
-        ani = FuncAnimation(fig, animate, frames=len(positions),
-                          init_func=init, interval=50, blit=True, repeat=True)
-        
-        plt.tight_layout()
-        return ani
-    
-    @staticmethod
-    def criar_animacao_reentrada(altitudes, velocities, times, title="Reentrada Atmosférica"):
-        """
-        Cria animação para reentrada atmosférica
-        
-        Args:
-            altitudes: array de altitudes
-            velocities: array de velocidades
-            times: array de tempos
-            title: título da animação
-        """
-        fig, ax = plt.subplots(figsize=(12, 8))
-        
-        # Configuração do gráfico
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-5000, np.max(altitudes) * 1.1)
-        ax.set_title(title, fontsize=16, fontweight='bold')
-        ax.set_xlabel("Direção (m)")
-        ax.set_ylabel("Altitude (m)")
         ax.grid(True, alpha=0.3)
         
-        # Camadas atmosféricas
-        max_alt = np.max(altitudes)
-        ax.axhspan(80000, max_alt, alpha=0.1, color='black', label='Espaço')
-        ax.axhspan(40000, 80000, alpha=0.1, color='darkblue', label='Alta Atmosfera')
-        ax.axhspan(10000, 40000, alpha=0.1, color='blue', label='Atmosfera Média')
-        ax.axhspan(0, 10000, alpha=0.1, color='lightblue', label='Baixa Atmosfera')
-        
-        # Solo
-        from matplotlib.patches import Rectangle
-        ground = Rectangle((-10, -5000), 20, 5000, color='brown', alpha=0.7, label='Superfície')
-        ax.add_patch(ground)
-        
-        # Elementos da animação
-        capsule, = ax.plot([], [], 'ro', markersize=12, markeredgecolor='darkred', 
-                          markerfacecolor='red', label='Cápsula')
-        plasma_trail, = ax.plot([], [], 'y-', linewidth=3, alpha=0.7, label='Esteira de Plasma')
-        trajectory, = ax.plot([], [], 'r--', alpha=0.5, linewidth=1, label='Trajetória')
-        
-        ax.legend(loc='upper left')
-        
-        # Texto informativo
-        info_text = ax.text(0.98, 0.98, "", transform=ax.transAxes, fontsize=10,
-                          verticalalignment='top', horizontalalignment='right',
-                          bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+        time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, 
+                           fontsize=12, bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
         def init():
-            capsule.set_data([], [])
-            plasma_trail.set_data([], [])
-            trajectory.set_data([], [])
-            info_text.set_text("")
-            return capsule, plasma_trail, trajectory, info_text
+            trail.set_data([], [])
+            satellite.set_data([], [])
+            time_text.set_text('')
+            return trail, satellite, time_text
         
         def animate(i):
-            current_altitude = altitudes[i]
-            current_velocity = velocities[i]
-            current_time = times[i]
-            
-            # Cápsula
-            capsule.set_data([0], [current_altitude])
-            
-            # Esteira de plasma
-            if abs(current_velocity) > 2000 and current_altitude > 50000:
-                trail_length = min(1000, abs(current_velocity) * 0.1)
-                plasma_trail.set_data([0, 0], [current_altitude, current_altitude + trail_length])
-                plasma_trail.set_alpha(0.8)
-            elif abs(current_velocity) > 1000:
-                plasma_trail.set_data([0, 0], [current_altitude, current_altitude + 500])
-                plasma_trail.set_alpha(0.6)
-            else:
-                plasma_trail.set_data([], [])
-            
-            # Trajetória
-            start_idx = max(0, i - 100)
-            trajectory.set_data(np.zeros(i - start_idx + 1), altitudes[start_idx:i+1])
-            
-            # Informações
-            phase = "FASE INICIAL" if current_altitude > 80000 else \
-                   "REENTRADA CRÍTICA" if current_altitude > 40000 else \
-                   "FASE FINAL" if current_altitude > 10000 else "QUASE TERRA"
-            
-            temp = 300 + (abs(current_velocity)**3 * 1e-9)
-            
-            info_text.set_text(
-                f"Tempo: {current_time:.1f} s\n"
-                f"Altitude: {current_altitude:.0f} m\n"
-                f"Velocidade: {abs(current_velocity):.0f} m/s\n"
-                f"Temperatura: {temp:.0f} K\n"
-                f"Fase: {phase}"
-            )
-            
-            return capsule, plasma_trail, trajectory, info_text
+            trail.set_data(positions[:i, 0], positions[:i, 1])
+            satellite.set_data([positions[i, 0]], [positions[i, 1]])
+            time_text.set_text(f'Tempo: {times[i]/60:.1f} min')
+            return trail, satellite, time_text
         
-        ani = FuncAnimation(fig, animate, frames=len(altitudes),
-                          init_func=init, interval=30, blit=True, repeat=True)
+        ani = FuncAnimation(fig, animate, init_func=init,
+                          frames=len(times), interval=30,
+                          blit=True, repeat=True)
         
-        plt.tight_layout()
+        print("✅ Animação orbital criada!")
         return ani
     
     @staticmethod
-    def criar_painel_multigrafico(times, datasets, titles, layout=(2, 2), figsize=(15, 10)):
+    def criar_animacao_reentrada(y, v, t, title):
         """
-        Cria um painel com múltiplos gráficos animados
+        Cria animação de reentrada atmosférica
         
-        Args:
-            times: array de tempos
-            datasets: lista de arrays de dados
-            titles: lista de títulos
-            layout: layout dos subplots (linhas, colunas)
-            figsize: tamanho da figura
+        Parâmetros:
+        -----------
+        y : array
+            Altitude ao longo do tempo
+        v : array
+            Velocidade ao longo do tempo
+        t : array
+            Tempo
+        title : str
+            Título da animação
+        
+        Retorna:
+        --------
+        FuncAnimation : Objeto de animação
         """
-        fig, axes = plt.subplots(layout[0], layout[1], figsize=figsize)
+        print(f"🔥 Criando animação de reentrada: {title}")
+        print(f"   Frames: {len(t)}")
+        
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        
+        # Gráfico de altitude
+        line1, = ax1.plot([], [], 'b-', linewidth=2)
+        ax1.set_xlim(0, np.max(t))
+        ax1.set_ylim(0, np.max(y) * 1.1)
+        ax1.set_xlabel('Tempo (s)', fontsize=12)
+        ax1.set_ylabel('Altitude (m)', fontsize=12)
+        ax1.set_title('Altitude vs Tempo', fontsize=12, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        
+        # Gráfico de velocidade
+        line2, = ax2.plot([], [], 'r-', linewidth=2)
+        ax2.set_xlim(0, np.max(t))
+        ax2.set_ylim(np.min(v) * 1.1, 0)
+        ax2.set_xlabel('Tempo (s)', fontsize=12)
+        ax2.set_ylabel('Velocidade (m/s)', fontsize=12)
+        ax2.set_title('Velocidade vs Tempo', fontsize=12, fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        
+        fig.suptitle(title, fontsize=14, fontweight='bold')
+        
+        def init():
+            line1.set_data([], [])
+            line2.set_data([], [])
+            return line1, line2
+        
+        def animate(i):
+            line1.set_data(t[:i], y[:i])
+            line2.set_data(t[:i], v[:i])
+            return line1, line2
+        
+        ani = FuncAnimation(fig, animate, init_func=init,
+                          frames=len(t), interval=20,
+                          blit=True, repeat=True)
+        
+        print("✅ Animação de reentrada criada!")
+        return ani
+    
+    @staticmethod
+    def criar_painel_multigrafico(t, datasets, titles, layout=(2, 2), figsize=(15, 10)):
+        """
+        Cria painel com múltiplos gráficos animados
+        
+        Parâmetros:
+        -----------
+        t : array
+            Dados de tempo
+        datasets : list of arrays
+            Lista de conjuntos de dados para plotar
+        titles : list of str
+            Lista de títulos para cada subplot
+        layout : tuple
+            Layout de subplots (linhas, colunas)
+        figsize : tuple
+            Tamanho da figura
+        
+        Retorna:
+        --------
+        FuncAnimation : Objeto de animação
+        """
+        print(f"📊 Criando painel multigráfico")
+        print(f"   Subplots: {layout[0]}x{layout[1]}")
+        
+        fig, axes = plt.subplots(*layout, figsize=figsize)
         axes = axes.flatten() if hasattr(axes, 'flatten') else [axes]
         
         lines = []
-        points = []
-        info_texts = []
-        
-        # Inicializar cada subplot
-        for idx, (ax, data, title) in enumerate(zip(axes, datasets, titles)):
-            ax.set_xlim(0, np.max(times))
-            ax.set_ylim(np.min(data) * 0.95, np.max(data) * 1.05)
-            ax.set_title(title, fontsize=12, fontweight='bold')
-            ax.set_xlabel('Tempo (s)')
-            ax.grid(True, alpha=0.3)
-            
-            line, = ax.plot([], [], 'b-', linewidth=2)
-            point, = ax.plot([], [], 'ro', markersize=6)
-            info_text = ax.text(0.02, 0.98, "", transform=ax.transAxes, fontsize=9,
-                              verticalalignment='top')
-            
-            lines.append(line)
-            points.append(point)
-            info_texts.append(info_text)
-        
-        def init():
-            for line, point, info_text in zip(lines, points, info_texts):
-                line.set_data([], [])
-                point.set_data([], [])
-                info_text.set_text("")
-            return lines + points + info_texts
-        
-        def animate(i):
-            for idx, (line, point, info_text, data) in enumerate(zip(lines, points, info_texts, datasets)):
-                line.set_data(times[:i+1], data[:i+1])
-                point.set_data([times[i]], [data[i]])
-                info_text.set_text(f"t={times[i]:.1f}s\nv={data[i]:.1f}")
-            
-            return lines + points + info_texts
-        
-        ani = FuncAnimation(fig, animate, frames=len(times),
-                          init_func=init, interval=40, blit=True, repeat=True)
+        for i, (ax, data, title) in enumerate(zip(axes, datasets, titles)):
+            if i < len(datasets):
+                line, = ax.plot([], [], 'b-', linewidth=2)
+                
+                # Ajustar limites
+                valid_data = data[~np.isnan(data)] if len(data) > 0 else [0]
+                if len(valid_data) == 0:
+                    valid_data = [0]
+                
+                t_data = t if len(t) == len(data) else t[:len(data)]
+                
+                ax.set_xlim(np.min(t_data), np.max(t_data))
+                y_min, y_max = np.min(valid_data), np.max(valid_data)
+                margin = (y_max - y_min) * 0.1 if y_max != y_min else 1
+                ax.set_ylim(y_min - margin, y_max + margin)
+                ax.set_xlabel('Tempo', fontsize=10)
+                ax.set_ylabel(title, fontsize=10)
+                ax.set_title(title, fontsize=11, fontweight='bold')
+                ax.grid(True, alpha=0.3)
+                lines.append((line, t_data, data))
         
         plt.tight_layout()
+        
+        def init():
+            for line, _, _ in lines:
+                line.set_data([], [])
+            return [line for line, _, _ in lines]
+        
+        def animate(i):
+            for line, t_data, data in lines:
+                idx = min(i, len(data) - 1)
+                line.set_data(t_data[:idx], data[:idx])
+            return [line for line, _, _ in lines]
+        
+        max_frames = max(len(data) for _, _, data in lines)
+        ani = FuncAnimation(fig, animate, init_func=init,
+                          frames=max_frames, interval=30,
+                          blit=True, repeat=True)
+        
+        print("✅ Painel multigráfico criado!")
         return ani
+
+
+# Verificação inicial ao importar
+if __name__ != "__main__":
+    if not PILLOW_AVAILABLE:
+        print("=" * 60)
+        print("⚠️  AVISO: Pillow não está instalado")
+        print("   Para salvar animações como GIF, execute:")
+        print("   pip install pillow")
+        print("=" * 60)
