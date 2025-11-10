@@ -103,7 +103,14 @@ export function AddSpaceshipDialog({ open, onOpenChange, spaceship, onSuccess }:
               min="1"
               placeholder="Ex: 5"
               value={formData.capacidade || ""}
-              onChange={(e) => setFormData({ ...formData, capacidade: Number.parseInt(e.target.value) || 0 })}
+              onChange={(e) => {
+            const valorString = e.target.value;
+            const valorInt = Number.parseInt(valorString, 10);
+            setFormData({
+              ...formData,
+              capacidade: isNaN(valorInt) ? 0 : valorInt,
+            });
+          }}
               required
             />
           </div>

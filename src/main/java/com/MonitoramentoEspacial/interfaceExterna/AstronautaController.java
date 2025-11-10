@@ -4,10 +4,10 @@ import com.MonitoramentoEspacial.aplicacao.AstronautaServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder; // <- IMPORTAR
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import jakarta.validation.Valid;
-import java.net.URI; // <- IMPORTAR
+import java.net.URI; 
 import java.util.List;
 
 @RestController

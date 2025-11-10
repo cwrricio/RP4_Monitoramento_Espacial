@@ -45,7 +45,7 @@ public class EspaconaveService implements EspaconaveServiceInterface {
             .orElseThrow(() -> new RecursoNaoEncontradoException("Espaçonave não encontrada com ID: " + id));
 
         espaconave.setNome(request.getNome());
-        espaconave.setCapacidadeTripulacao(request.getCapacidadeTripulacao());
+        espaconave.setCapacidadeTripulacao(request.getCapacidade());
         espaconave.setStatusOperacional(request.getStatusOperacional());
         
         Espaconave salva = repository.save(espaconave);
@@ -70,7 +70,7 @@ public class EspaconaveService implements EspaconaveServiceInterface {
             lista = repository.findAll();
         }
         return lista.stream()
-            .map(espaconaveMapper::toDTO) // MODIFICADO: Usa o mapper
+            .map(espaconaveMapper::toDTO)
             .collect(Collectors.toList());
     }
 

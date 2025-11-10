@@ -19,11 +19,11 @@ public class SalvarEspaconaveRequest {
     @NotBlank(message = "Status operacional não pode ser vazio")
     private String statusOperacional;
 
-    // Getters e Setters
+    
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
-    public Integer getCapacidadeTripulacao() { return capacidade; }
-    public void setCapacidadeTripulacao(Integer capacidadeTripulacao) { this.capacidade = capacidadeTripulacao; }
+    public Integer getCapacidade() { return capacidade; }
+    public void setCapacidade(Integer capacidade) { this.capacidade = capacidade; }
     public String getStatusOperacional() { return statusOperacional; }
     public void setStatusOperacional(String statusOperacional) { this.statusOperacional = statusOperacional; }
 }

@@ -25,8 +25,8 @@ export function AddOperatorDialog({ open, onOpenChange, operator, onSuccess }: A
     nome: "",
     idade: 0,
     turno: "",
-    areaDeEspecializacao: "",
-    statusAtivo: true,
+    areaEspecializacao: "",
+    ativo: true,
   })
 
   useEffect(() => {
@@ -35,16 +35,16 @@ export function AddOperatorDialog({ open, onOpenChange, operator, onSuccess }: A
         nome: operator.nome,
         idade: operator.idade,
         turno: operator.turno,
-        areaDeEspecializacao: operator.areaDeEspecializacao,
-        statusAtivo: operator.statusAtivo,
+        areaEspecializacao: operator.areaEspecializacao,
+        ativo: operator.ativo,
       })
     } else {
       setFormData({
         nome: "",
         idade: 0,
         turno: "",
-        areaDeEspecializacao: "",
-        statusAtivo: true,
+        areaEspecializacao: "",
+        ativo: true,
       })
     }
   }, [operator, open])
@@ -131,8 +131,8 @@ export function AddOperatorDialog({ open, onOpenChange, operator, onSuccess }: A
             <Input
               id="especializacao"
               placeholder="Ex: Controle de Voo"
-              value={formData.areaDeEspecializacao}
-              onChange={(e) => setFormData({ ...formData, areaDeEspecializacao: e.target.value })}
+              value={formData.areaEspecializacao}
+              onChange={(e) => setFormData({ ...formData, areaEspecializacao: e.target.value })}
               required
             />
           </div>
@@ -140,8 +140,8 @@ export function AddOperatorDialog({ open, onOpenChange, operator, onSuccess }: A
           <div className="space-y-3">
             <Label>Status</Label>
             <RadioGroup
-              value={formData.statusAtivo ? "ativo" : "inativo"}
-              onValueChange={(value) => setFormData({ ...formData, statusAtivo: value === "ativo" })}
+              value={formData.ativo ? "ativo" : "inativo"}
+              onValueChange={(value) => setFormData({ ...formData, ativo: value === "ativo" })}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="ativo" id="ativo" />

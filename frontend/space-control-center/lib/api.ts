@@ -49,16 +49,16 @@ export interface OperadorDeMissaoDTO {
   nome: string
   idade: number
   turno: string
-  areaDeEspecializacao: string
-  statusAtivo: boolean
+  areaEspecializacao: string 
+  ativo: boolean             
 }
 
 export interface CriarOperadorRequest {
   nome: string
   idade: number
   turno: string
-  areaDeEspecializacao: string
-  statusAtivo: boolean
+  areaEspecializacao: string
+  ativo: boolean
 }
 
 // ============================================
