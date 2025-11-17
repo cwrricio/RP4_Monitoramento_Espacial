@@ -3,18 +3,23 @@ from datetime import datetime
 import json
 import asyncio
 from typing import Dict, Any
-
 from core.foguete import RocketSimulation
 from core.orbita import OrbitalSimulation
 from core.reentrada import ReentrySimulation
 from core.observers import SimulationObserver, EmergencyObserver
 from .models import SimulacaoRequest, SimulacaoResponse
+from api.twin_api import router as twin_router
+from core.twin_integration import enhance_rocket_with_twin
+from core.twin_integration import enhance_orbital_with_twin
+
 
 app = FastAPI(
     title="Sistema de Simulação Espacial com Observer",
     description="API para simulações espaciais com notificações em tempo real",
     version="2.0.0"
 )
+
+app.include_router(twin_router)
 
 # Armazenamento de simulações
 simulacoes: Dict[str, Any] = {}
@@ -49,6 +54,7 @@ class WebSocketObserver(SimulationObserver, EmergencyObserver):
         self.manager = connection_manager
         self.sim_id = sim_id
 
+
     async def on_simulation_update(self, simulation_type, data: Dict[str, Any]):
         message = {
             'type': 'simulation_update',
@@ -58,6 +64,7 @@ class WebSocketObserver(SimulationObserver, EmergencyObserver):
             'timestamp': datetime.now().isoformat()
         }
         await self.manager.broadcast(json.dumps(message))
+
 
     async def on_simulation_complete(self, simulation_type, results: Dict[str, Any]):
         message = {
@@ -69,6 +76,7 @@ class WebSocketObserver(SimulationObserver, EmergencyObserver):
         }
         await self.manager.broadcast(json.dumps(message))
 
+
     async def on_emergency_detected(self, emergency_type: str, simulation_data: Dict[str, Any]):
         message = {
             'type': 'emergency',
@@ -79,15 +87,17 @@ class WebSocketObserver(SimulationObserver, EmergencyObserver):
         }
         await self.manager.broadcast(json.dumps(message))
 
+
 # Endpoints da API
 @app.post("/simulacoes/foguete", response_model=SimulacaoResponse)
 async def criar_simulacao_foguete(request: SimulacaoRequest):
     """Cria e executa uma simulação de foguete"""
     try:
         sim_id = f"foguete_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
+       
         # Criar simulação
         sim = RocketSimulation()
+        sim = enhance_rocket_with_twin(sim)
         
         # Configurar parâmetros personalizados se fornecidos
         if hasattr(request, 'tempo_maximo') and request.tempo_maximo:
@@ -98,17 +108,18 @@ async def criar_simulacao_foguete(request: SimulacaoRequest):
             sim.m_propellant = request.massa_combustivel
         if hasattr(request, 'empuxo') and request.empuxo:
             sim.thrust = request.empuxo
-        
+       
         # Criar e registrar observer WebSocket
         ws_observer = WebSocketObserver(manager, sim_id)
         sim.add_simulation_observer(ws_observer)
         sim.add_emergency_observer(ws_observer)
-        
+       
         # Executar simulação (assíncrona)
         await asyncio.get_event_loop().run_in_executor(None, sim.executarSimulacao)
-        
+       
         # Armazenar simulação
         simulacoes[sim_id] = sim
+
 
         return SimulacaoResponse(
             id=sim_id,
@@ -126,31 +137,33 @@ async def criar_simulacao_foguete(request: SimulacaoRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/simulacoes/orbita", response_model=SimulacaoResponse)
 async def criar_simulacao_orbita(request: SimulacaoRequest):
     """Cria e executa uma simulação orbital"""
     try:
         sim_id = f"orbita_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
+       
         # Criar simulação
         sim = OrbitalSimulation()
-        
+        sim = enhance_orbital_with_twin(sim)
         # Configurar parâmetros personalizados se fornecidos
         if hasattr(request, 'altitude_inicial') and request.altitude_inicial:
             sim.h = request.altitude_inicial
         if hasattr(request, 'tempo_maximo') and request.tempo_maximo:
             sim.t_max = request.tempo_maximo
-        
+       
         # Criar e registrar observer WebSocket
         ws_observer = WebSocketObserver(manager, sim_id)
         sim.add_simulation_observer(ws_observer)
         sim.add_emergency_observer(ws_observer)
-        
+       
         # Executar simulação (assíncrona)
         await asyncio.get_event_loop().run_in_executor(None, sim.executarSimulacao)
-        
+       
         # Armazenar simulação
         simulacoes[sim_id] = sim
+
 
         return SimulacaoResponse(
             id=sim_id,
@@ -166,31 +179,33 @@ async def criar_simulacao_orbita(request: SimulacaoRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/simulacoes/reentrada", response_model=SimulacaoResponse)
 async def criar_simulacao_reentrada(request: SimulacaoRequest):
     """Cria e executa uma simulação de reentrada"""
     try:
         sim_id = f"reentrada_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        
+       
         # Criar simulação
         sim = ReentrySimulation()
-        
+       
         # Configurar parâmetros personalizados se fornecidos
         if hasattr(request, 'altitude_inicial') and request.altitude_inicial:
             sim.h0 = request.altitude_inicial
         if hasattr(request, 'velocidade_inicial') and request.velocidade_inicial:
             sim.v0 = -request.velocidade_inicial  # Negativo para direção descendente
-        
+       
         # Criar e registrar observer WebSocket
         ws_observer = WebSocketObserver(manager, sim_id)
         sim.add_simulation_observer(ws_observer)
         sim.add_emergency_observer(ws_observer)
-        
+       
         # Executar simulação (assíncrona)
         await asyncio.get_event_loop().run_in_executor(None, sim.executarSimulacao)
-        
+       
         # Armazenar simulação
         simulacoes[sim_id] = sim
+
 
         return SimulacaoResponse(
             id=sim_id,
@@ -206,12 +221,13 @@ async def criar_simulacao_reentrada(request: SimulacaoRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/simulacoes/{simulacao_id}")
 def obter_simulacao(simulacao_id: str):
     """Obtém os resultados de uma simulação específica"""
     if simulacao_id not in simulacoes:
         raise HTTPException(status_code=404, detail="Simulação não encontrada")
-    
+   
     sim = simulacoes[simulacao_id]
     return {
         'id': simulacao_id,
@@ -221,6 +237,7 @@ def obter_simulacao(simulacao_id: str):
         'data_execucao': sim.dataExecucao.isoformat(),
         'dados': sim.obter_dados_simulacao()
     }
+
 
 @app.get("/simulacoes")
 def listar_simulacoes():
@@ -238,14 +255,16 @@ def listar_simulacoes():
         ]
     }
 
+
 @app.delete("/simulacoes/{simulacao_id}")
 def deletar_simulacao(simulacao_id: str):
     """Remove uma simulação do armazenamento"""
     if simulacao_id not in simulacoes:
         raise HTTPException(status_code=404, detail="Simulação não encontrada")
-    
+   
     del simulacoes[simulacao_id]
     return {"message": f"Simulação {simulacao_id} removida"}
+
 
 # WebSocket para notificações em tempo real
 @app.websocket("/ws")
@@ -260,6 +279,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+
 # Health check
 @app.get("/")
 def health_check():
@@ -270,6 +290,7 @@ def health_check():
         "timestamp": datetime.now().isoformat(),
         "simulacoes_ativas": len(simulacoes)
     }
+
 
 @app.get("/health")
 def health():

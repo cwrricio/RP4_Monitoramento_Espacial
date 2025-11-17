@@ -7,8 +7,7 @@ class SimulationObserver(ABC):
     @abstractmethod
     def on_simulation_update(self, simulation_type: TipoSimulacao, data: Dict[str, Any]):
         """Chamado quando há atualização na simulação"""
-        pass
-    
+        pass  
     @abstractmethod
     def on_simulation_complete(self, simulation_type: TipoSimulacao, results: Dict[str, Any]):
         """Chamado quando a simulação é concluída"""
