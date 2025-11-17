@@ -55,4 +55,20 @@ public class AstronautaController {
     ) {
         return ResponseEntity.ok(astronautaService.atualizarAstronauta(id, request));
     }
+
+    // ===================================================================
+    // NOVO ENDPOINT ADICIONADO
+    // ===================================================================
+    /**
+     * Deleta um astronauta com base no ID.
+     * @param id O ID do astronauta a ser deletado.
+     * @return Resposta 204 No Content (sucesso sem corpo).
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        astronautaService.deletarAstronauta(id);
+        
+        // A resposta padrão para um DELETE bem-sucedido é 204 No Content
+        return ResponseEntity.noContent().build();
+    }
 }

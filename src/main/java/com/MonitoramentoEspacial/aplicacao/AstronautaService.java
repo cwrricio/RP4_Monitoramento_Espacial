@@ -106,4 +106,24 @@ public class AstronautaService implements AstronautaServiceInterface {
         
         return astronautaMapper.toDTO(astronautaSalvo);
     }
+
+    // ===================================================================
+    // NOVO MÉTODO ADICIONADO
+    // ===================================================================
+    /**
+     * Implementação da lógica de deleção.
+     */
+    @Override
+    @Transactional
+    public void deletarAstronauta(Long id) {
+        log.info("Tentando deletar astronauta ID: {}", id);
+        
+        // Verifica se o recurso existe antes de tentar deletar
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Astronauta não encontrado para exclusão (ID: " + id + ")");
+        }
+        
+        repository.deleteById(id);
+        log.info("Astronauta ID: {} deletado com sucesso", id);
+    }
 }

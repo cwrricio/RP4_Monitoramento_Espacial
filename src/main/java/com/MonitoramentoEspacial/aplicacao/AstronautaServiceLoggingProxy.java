@@ -72,4 +72,23 @@ public class AstronautaServiceLoggingProxy implements AstronautaServiceInterface
             throw e;
         }
     }
+
+    // ===================================================================
+    // NOVO MÉTODO ADICIONADO
+    // ===================================================================
+    /**
+     * Intercepta a chamada de deleção para adicionar logging.
+     */
+    @Override
+    public void deletarAstronauta(Long id) {
+        log.info("PROXY: Requisição para deletar astronauta com ID: {}", id);
+        try {
+            realAstronautaService.deletarAstronauta(id);
+            log.info("PROXY: Astronauta ID {} deletado com sucesso.", id);
+        } catch (Exception e) {
+            log.error("PROXY: Erro ao deletar astronauta com ID {}: {}", id, e.getMessage());
+            // Relança a exceção para o controller/handler tratar
+            throw e;
+        }
+    }
 }

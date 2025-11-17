@@ -25,8 +25,14 @@ public interface AstronautaServiceInterface {
     List<AstronautaDTO> listarAstronautas(String nome);
 
     AstronautaDTO atualizarAstronauta(Long id, AtualizaAstronautaRequest request);
-
-                     
-
+    
+    // ===================================================================
+    // NOVO MÉTODO ADICIONADO
+    // ===================================================================
+    /**
+     * Deleta um astronauta com base no ID.
+     * @param id O ID do astronauta a ser deletado.
+     */
+    void deletarAstronauta(Long id);
     
 }
