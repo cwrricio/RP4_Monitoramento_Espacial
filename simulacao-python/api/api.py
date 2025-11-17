@@ -8,11 +8,14 @@ from core.orbita import OrbitalSimulation
 from core.reentrada import ReentrySimulation
 from core.enums import TipoSimulacao, Gravidade
 
+
 app = FastAPI(title="Sistema de Simulação de Foguetes", version="1.0.0")
+
 
 class TipoSimulacao(str, Enum):
     FOGUETE = "Foguete"
     OUTRO = "Outro"
+
 
 class SimulacaoRequest(BaseModel):
     descricao: str = "Simulação de Lançamento de Foguete"
@@ -22,9 +25,11 @@ class SimulacaoRequest(BaseModel):
     empuxo: float = 7607000
     tipo: TipoSimulacao = TipoSimulacao.FOGUETE
 
+
 class EmergenciaRequest(BaseModel):
     descricao: str
     gravidade: int = 2  # 1=Baixa, 2=Média, 3=Alta, 4=Critica
+
 
 class SimulacaoResponse(BaseModel):
     id: str
@@ -34,6 +39,7 @@ class SimulacaoResponse(BaseModel):
     data_execucao: str
     detalhes: dict
 
+
 class EmergenciaResponse(BaseModel):
     evento_id: str
     descricao: str
@@ -41,9 +47,11 @@ class EmergenciaResponse(BaseModel):
     resolvido: bool
     protocolos_ativados: list
 
+
 # Armazenamento em memória (em produção, usar banco de dados)
 simulacoes = {}
 eventos_emergencia = {}
+
 
 @app.post("/simulacoes", response_model=SimulacaoResponse)
 def criar_e_executar_simulacao(request: SimulacaoRequest):
@@ -54,6 +62,7 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
         simulacao.descricao = request.descricao
         simulacao.tipo = request.tipo
 
+
         # Configurar parâmetros específicos do foguete
         if isinstance(simulacao, RocketSimulation):
             simulacao.t_max = request.tempo_maximo
@@ -61,21 +70,26 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
             simulacao.m_propellant = request.massa_combustivel
             simulacao.thrust = request.empuxo
 
+
         # Executar simulação
         simulacao.executarSimulacao()
+
 
         # ✅ NOVO: Criar animação automaticamente
         if hasattr(simulacao, 'criar_animacao'):
             simulacao.criar_animacao()
+
 
         # Processar resultados
         sucesso = simulacao.processarSimulacao()
         if not sucesso:
             raise HTTPException(status_code=500, detail="Falha no processamento da simulação")
 
+
         # Armazenar simulação
         simulacao_id = f"sim_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         simulacoes[simulacao_id] = simulacao
+
 
         # Preparar resposta
         return SimulacaoResponse(
@@ -92,8 +106,10 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
             }  
         )
 
+
     except Exception as e:  
         raise HTTPException(status_code=500, detail=f"Erro na simulação: {str(e)}")  
+
 
 @app.get("/simulacoes/{simulacao_id}", response_model=SimulacaoResponse)  
 def obter_simulacao(simulacao_id: str):  
@@ -101,7 +117,9 @@ def obter_simulacao(simulacao_id: str):
     if simulacao_id not in simulacoes:  
         raise HTTPException(status_code=404, detail="Simulação não encontrada")  
 
+
     simulacao = simulacoes[simulacao_id]  
+
 
     return SimulacaoResponse(  
         id=simulacao_id,  
@@ -111,6 +129,7 @@ def obter_simulacao(simulacao_id: str):
         data_execucao=simulacao.dataExecucao.isoformat(),  
         detalhes={})  
 
+
 # ✅ NOVO: Endpoint para gerar animação
 @app.post("/simulacoes/{simulacao_id}/animacao")
 def gerar_animacao_simulacao(simulacao_id: str):
@@ -118,7 +137,9 @@ def gerar_animacao_simulacao(simulacao_id: str):
     if simulacao_id not in simulacoes:
         raise HTTPException(status_code=404, detail="Simulação não encontrada")
 
+
     simulacao = simulacoes[simulacao_id]
+
 
     try:
         if hasattr(simulacao, 'criar_animacao'):
@@ -127,8 +148,10 @@ def gerar_animacao_simulacao(simulacao_id: str):
         else:
             raise HTTPException(status_code=400, detail="Simulação não suporta animação")
 
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar animação: {str(e)}")
+
 
 # Endpoints existentes de emergência (mantidos intactos)
 @app.post("/emergencias", response_model=EmergenciaResponse)  
@@ -140,6 +163,7 @@ def registrar_emergencia(request: EmergenciaRequest):
         # Registrar evento com o nível de gravidade  
         evento.RegistrarEventoEmergencia(request.gravidade)  
         # Ativar protocolos (após detecção do evento, conforme diagrama)
+
 
         protocolos_ativados = []
         for protocolo in evento.protocolos:
@@ -166,13 +190,16 @@ def registrar_emergencia(request: EmergenciaRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no registro de emergência: {str(e)}")
 
-@app.get("/emergencias/{evento_id}", response_model=EmergenciaResponse) 
+
+@app.get("/emergencias/{evento_id}", response_model=EmergenciaResponse)
 def obter_emergencia(evento_id: str):
     """Obtém os detalhes de um evento de emergência específico"""
     if evento_id not in eventos_emergencia:
         raise HTTPException(status_code=404, detail="Evento de emergência não encontrado")
 
+
     evento = eventos_emergencia[evento_id]
+
 
     protocolos_ativados = []
     for protocolo in evento.protocolos:
@@ -183,6 +210,7 @@ def obter_emergencia(evento_id: str):
             "ativo": protocolo.ativo
         })
 
+
     return EmergenciaResponse(
         evento_id=evento_id,
         descricao=evento.descricao,
@@ -190,6 +218,7 @@ def obter_emergencia(evento_id: str):
         resolvido=evento.resolvido,
         protocolos_ativados=protocolos_ativados
     )
+
 
 @app.get("/simulacoes")
 def listar_simulacoes():
@@ -205,6 +234,7 @@ def listar_simulacoes():
             for sim_id, sim in simulacoes.items()
         ]
     }
+
 
 @app.get("/emergencias")
 def listar_emergencias():
@@ -222,14 +252,18 @@ def listar_emergencias():
         ]
     }
 
+
 @app.post("/simulacoes/{simulacao_id}/graficos")
 def gerar_graficos_simulacao(simulacao_id: str):
     """Gera gráficos para uma simulação específica"""
 
+
     if simulacao_id not in simulacoes:
         raise HTTPException(status_code=404, detail="Simulação não encontrada")
 
+
     simulacao = simulacoes[simulacao_id]
+
 
     if isinstance(simulacao, RocketSimulation):
         try:
@@ -240,6 +274,7 @@ def gerar_graficos_simulacao(simulacao_id: str):
             raise HTTPException(status_code=500, detail=f"Erro ao gerar gráficos: {str(e)}")
     else:
         raise HTTPException(status_code=400, detail="Geração de gráficos disponível apenas para simulações de foguete")
+
 
 if __name__ == "__main__":
     import uvicorn

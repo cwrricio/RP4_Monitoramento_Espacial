@@ -1,4 +1,8 @@
-from .physics import *
-from .animation import *
+"""
+Utilitários para o sistema de simulação espacial
+"""
+
+from .physics import PhysicsUtils
+from .animation import AnimationUtils
 
 __all__ = ['PhysicsUtils', 'AnimationUtils']
