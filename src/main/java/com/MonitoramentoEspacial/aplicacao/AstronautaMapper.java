@@ -5,6 +5,7 @@ import com.MonitoramentoEspacial.aplicacao.dominio.DadosBiometricos;
 import com.MonitoramentoEspacial.interfaceExterna.AstronautaDTO;
 import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping; 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Optional;
@@ -19,7 +20,12 @@ public interface AstronautaMapper {
     /**
      * Converte o DTO de criação em uma Entidade.
      * O MapStruct implementa este método automaticamente.
+     * 2. ANOTAÇÕES ADICIONADAS para silenciar os avisos de "unmapped target":
+     * Dizemos ao MapStruct para ignorar 'id' e 'dadosBiometricos' 
+     * ao mapear de um Request para uma Entidade.
      */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "dadosBiometricos", ignore = true)
     Astronauta toEntity(CriarAstronautaRequest request);
 
     /**
