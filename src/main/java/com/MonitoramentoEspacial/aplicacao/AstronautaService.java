@@ -8,18 +8,21 @@ import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest;
 import com.MonitoramentoEspacial.middleware.AstronautaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// IMPORT FALTANDO (Para o RecursoNaoEncontradoException)
+import com.MonitoramentoEspacial.aplicacao.RecursoNaoEncontradoException; 
+
 /**
  * Implementação real da lógica de negócio para Astronautas.
  * É anotado com "realAstronautaService" para ser injetado no Proxy de Logging.
  */
 @Service("realAstronautaService")
+@SuppressWarnings("null") // <-- ADICIONADO: Para corrigir os 5 avisos de "Null type safety"
 public class AstronautaService implements AstronautaServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(AstronautaService.class);
@@ -34,7 +37,7 @@ public class AstronautaService implements AstronautaServiceInterface {
      * as dependências são 'final' e o objeto é imutável, além de
      * facilitar testes unitários.
      */
-    @Autowired
+    // @Autowired // <-- REMOVIDO: Este era o aviso "Unnecessary @Autowired"
     public AstronautaService(AstronautaRepository repository, AstronautaMapper astronautaMapper) {
         this.repository = repository;
         this.astronautaMapper = astronautaMapper;
@@ -105,5 +108,19 @@ public class AstronautaService implements AstronautaServiceInterface {
         Astronauta astronautaSalvo = repository.save(astronauta);
         
         return astronautaMapper.toDTO(astronautaSalvo);
+    }
+
+    @Override
+    @Transactional
+    public void deletarAstronauta(Long id) {
+        log.info("Tentando deletar astronauta ID: {}", id);
+        
+        // Verifica se o recurso existe antes de tentar deletar
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Astronauta não encontrado para exclusão (ID: " + id + ")");
+        }
+        
+        repository.deleteById(id);
+        log.info("Astronauta ID: {} deletado com sucesso", id);
     }
 }

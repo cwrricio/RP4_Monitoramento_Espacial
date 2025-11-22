@@ -1,16 +1,19 @@
 package com.MonitoramentoEspacial.aplicacao;
 
+import java.time.LocalDateTime;
+
+import javax.annotation.processing.Generated;
+
+import org.springframework.stereotype.Component;
+
 import com.MonitoramentoEspacial.aplicacao.dominio.Missao;
 import com.MonitoramentoEspacial.aplicacao.dominio.ProtocoloEmergencial;
 import com.MonitoramentoEspacial.aplicacao.dominio.TipoProtocolo;
 import com.MonitoramentoEspacial.interfaceExterna.ProtocoloEmergencialDTO;
-import java.time.LocalDateTime;
-import javax.annotation.processing.Generated;
-import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-22T14:27:52-0300",
+    date = "2025-11-17T21:29:37-0300",
     comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251023-0518, environment: Java 21.0.8 (Eclipse Adoptium)"
 )
 @Component

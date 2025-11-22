@@ -66,19 +66,19 @@ export interface CriarOperadorRequest {
 // ============================================
 export class AstronautAPI {
   static async listar(): Promise<AstronautDTO[]> {
-    const response = await fetch(`${API_BASE_URL}/astronauts`)
+    const response = await fetch(`${API_BASE_URL}/astronautas`)
     if (!response.ok) throw new Error("Failed to fetch astronauts")
     return response.json()
   }
 
   static async buscarPorId(id: string): Promise<AstronautDTO> {
-    const response = await fetch(`${API_BASE_URL}/astronauts/${id}`)
+    const response = await fetch(`${API_BASE_URL}/astronautas/${id}`)
     if (!response.ok) throw new Error("Failed to fetch astronaut")
     return response.json()
   }
 
   static async criar(data: CreateAstronautRequest): Promise<AstronautDTO> {
-    const response = await fetch(`${API_BASE_URL}/astronauts`, {
+    const response = await fetch(`${API_BASE_URL}/astronautas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -88,7 +88,7 @@ export class AstronautAPI {
   }
 
   static async atualizar(id: string, data: CreateAstronautRequest): Promise<AstronautDTO> {
-    const response = await fetch(`${API_BASE_URL}/astronauts/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/astronautas/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -98,7 +98,7 @@ export class AstronautAPI {
   }
 
   static async deletar(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/astronauts/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/astronautas/${id}`, {
       method: "DELETE",
     })
     if (!response.ok) throw new Error("Failed to delete astronaut")
