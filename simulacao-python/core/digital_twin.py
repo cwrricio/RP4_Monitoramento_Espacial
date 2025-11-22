@@ -19,9 +19,7 @@ from collections import deque
 import threading
 
 
-# ─────────────────────────────────────────────────────────────
 # ESTADO DO DIGITAL TWIN
-# ─────────────────────────────────────────────────────────────
 
 class TwinState:
     """Representa o estado atual de um Digital Twin."""
@@ -50,9 +48,8 @@ class TwinState:
         self.anomalies = data_dict.get('anomalies', [])
 
 
-# ─────────────────────────────────────────────────────────────
+
 # DIGITAL TWIN BASE
-# ─────────────────────────────────────────────────────────────
 
 class DigitalTwin(ABC):
     """Classe base para todos os Digital Twins."""
@@ -73,9 +70,7 @@ class DigitalTwin(ABC):
         self.anomaly_threshold = 0.15   # desvio permitido
         self.prediction_window = 60     # segundos de histórico usado
 
-    # ————————————————————————————
     # MÉTODOS ABSTRATOS
-    # ————————————————————————————
     @abstractmethod
     def update_from_physical(self, physical_data: Dict[str, Any]):
         pass
@@ -88,9 +83,8 @@ class DigitalTwin(ABC):
     def detect_anomalies(self) -> List[Dict[str, Any]]:
         pass
 
-    # ————————————————————————————
+  
     # SINCRONIZAÇÃO
-    # ————————————————————————————
     def sync_with_physical(self, physical_data: Dict[str, Any]):
         with self.sync_lock:
             self.update_from_physical(physical_data)
@@ -103,9 +97,8 @@ class DigitalTwin(ABC):
             if anomalies:
                 self.current_state.anomalies = anomalies
 
-    # ————————————————————————————
     # HISTÓRICO
-    # ————————————————————————————
+
     def get_state_at_time(self, timestamp: datetime) -> Optional[TwinState]:
         for state_dict in self.historical_states:
             state_time = datetime.fromisoformat(state_dict['timestamp'])
@@ -132,9 +125,9 @@ class DigitalTwin(ABC):
 
         return values
 
-    # ————————————————————————————
+
     # ESTATÍSTICAS
-    # ————————————————————————————
+
     def calculate_statistics(self, parameter: str) -> Dict[str, float]:
         values = self.get_historical_data(parameter)
 
@@ -149,10 +142,8 @@ class DigitalTwin(ABC):
             "max": float(arr.max()),
             "current": float(arr[-1]),
         }
-
-    # ————————————————————————————
     # EXPORTAÇÃO
-    # ————————————————————————————
+
     def export_state(self, filepath: str):
         with open(filepath, "w") as f:
             json.dump(self.current_state.to_dict(), f, indent=2)
@@ -162,9 +153,7 @@ class DigitalTwin(ABC):
             json.dump(list(self.historical_states), f, indent=2)
 
 
-# ─────────────────────────────────────────────────────────────
 # DIGITAL TWIN PARA FOGUETES
-# ─────────────────────────────────────────────────────────────
 
 class RocketDigitalTwin(DigitalTwin):
     def __init__(self, twin_id: str, physical_entity_id: str):
@@ -179,7 +168,7 @@ class RocketDigitalTwin(DigitalTwin):
             'temperature': {'min': -50, 'max': 2000, 'nominal': 500},
         }
 
-    # ————————————————————————————
+   
     def update_from_physical(self, physical_data: Dict[str, Any]):
         self.current_state.data = {
             'altitude': physical_data.get('altitude', 0),
@@ -197,7 +186,6 @@ class RocketDigitalTwin(DigitalTwin):
             'fuel_percentage': self._calculate_fuel_percentage(physical_data),
         }
 
-    # ————————————————————————————
     def predict_next_state(self, horizon: float = 10.0) -> TwinState:
         predicted = TwinState()
         predicted.timestamp = datetime.now()
@@ -220,7 +208,6 @@ class RocketDigitalTwin(DigitalTwin):
 
         return predicted
 
-    # ————————————————————————————
     def detect_anomalies(self) -> List[Dict[str, Any]]:
         anomalies = []
 
@@ -249,7 +236,6 @@ class RocketDigitalTwin(DigitalTwin):
 
         return anomalies
 
-    # ————————————————————————————
     def _determine_flight_phase(self):
         alt = self.current_state.data.get('altitude', 0)
         vel = self.current_state.data.get('velocity', 0)
@@ -268,7 +254,7 @@ class RocketDigitalTwin(DigitalTwin):
 
         return "UNKNOWN"
 
-    # ————————————————————————————
+
     def _calculate_health_score(self):
         score = 100
         anomalies = self.detect_anomalies()
@@ -287,9 +273,8 @@ class RocketDigitalTwin(DigitalTwin):
         return (fuel / max_fuel) * 100 if max_fuel else 0
 
 
-# ─────────────────────────────────────────────────────────────
+
 # DIGITAL TWIN ORBITAL
-# ─────────────────────────────────────────────────────────────
 
 class OrbitalDigitalTwin(DigitalTwin):
     def __init__(self, twin_id: str, physical_entity_id: str):
@@ -377,9 +362,6 @@ class OrbitalDigitalTwin(DigitalTwin):
         return max(0, min(100, score))
 
 
-# ─────────────────────────────────────────────────────────────
-# GERENCIAMENTO DE MULTIPLOS TWIN
-# ─────────────────────────────────────────────────────────────
 
 class TwinManager:
     """Gerencia múltiplos Digital Twins."""

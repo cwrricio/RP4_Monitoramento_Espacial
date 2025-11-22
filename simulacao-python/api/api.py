@@ -58,9 +58,20 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
     """Cria e executa uma nova simulação COM ANIMAÇÃO"""
     try:
         # Criar simulação usando a função do diagrama
-        simulacao = Criarsimulacao()
+        # Seleciona a implementação correta com base no tipo solicitado
+        if request.tipo == TipoSimulacao.FOGUETE:
+            simulacao = RocketSimulation()
+        elif request.tipo == TipoSimulacao.OUTRO:
+            # Como exemplo, usando OrbitalSimulation para tipos "OUTRO"
+            simulacao = OrbitalSimulation()
+        else:
+            # Fallback para outros tipos de simulação (por exemplo, reentrada)
+            simulacao = ReentrySimulation()
+
         simulacao.descricao = request.descricao
-        simulacao.tipo = request.tipo
+        # Atribui tipo se o objeto suportar o atributo
+        if hasattr(simulacao, "tipo"):
+            simulacao.tipo = request.tipo
 
 
         # Configurar parâmetros específicos do foguete

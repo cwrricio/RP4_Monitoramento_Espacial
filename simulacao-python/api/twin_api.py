@@ -15,7 +15,6 @@ from datetime import datetime
 
 from core.digital_twin import TwinManager, DigitalTwin
 
-# Reutilizamos o mesmo gerenciador de Digital Twins em toda a API
 twin_manager = TwinManager()
 
 router = APIRouter(
@@ -24,19 +23,12 @@ router = APIRouter(
     responses={404: {"description": "Twin não encontrado"}}
 )
 
-# ─────────────────────────────────────────────────────────────
-# UTILITÁRIOS
-# ─────────────────────────────────────────────────────────────
-
 def get_twin_or_404(twin_id: str) -> DigitalTwin:
     twin = twin_manager.get_twin(twin_id)
     if twin is None:
         raise HTTPException(status_code=404, detail="Digital Twin não encontrado")
     return twin
 
-# ─────────────────────────────────────────────────────────────
-# ENDPOINTS DE LISTAGEM
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/", summary="Lista todos os Digital Twins")
 def listar_twins():
@@ -45,9 +37,6 @@ def listar_twins():
         "twins": list(twin_manager.twins.keys())
     }
 
-# ─────────────────────────────────────────────────────────────
-# ESTADO ATUAL
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/{twin_id}", summary="Estado atual do Digital Twin")
 def obter_estado_atual(twin_id: str):
@@ -58,9 +47,6 @@ def obter_estado_atual(twin_id: str):
         "state": twin.current_state.to_dict()
     }
 
-# ─────────────────────────────────────────────────────────────
-# HISTÓRICO
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/{twin_id}/history", summary="Histórico completo do Digital Twin")
 def obter_historico(twin_id: str):
@@ -91,10 +77,6 @@ def obter_estado_por_tempo(
         "state": state.to_dict()
     }
 
-# ─────────────────────────────────────────────────────────────
-# ANOMALIAS
-# ─────────────────────────────────────────────────────────────
-
 @router.get("/{twin_id}/anomalies", summary="Anomalias do Digital Twin")
 def obter_anomalias(twin_id: str):
     twin = get_twin_or_404(twin_id)
@@ -109,9 +91,6 @@ def obter_anomalias(twin_id: str):
 def obter_todas_anomalias():
     return twin_manager.get_all_anomalies()
 
-# ─────────────────────────────────────────────────────────────
-# PREVISÕES
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/{twin_id}/predict", summary="Previsão de estado futuro")
 def prever_estado_futuro(
@@ -126,9 +105,6 @@ def prever_estado_futuro(
         "predicted_state": pred.predictions
     }
 
-# ─────────────────────────────────────────────────────────────
-# ESTATÍSTICAS
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/{twin_id}/stats/{parameter}", summary="Estatísticas de um parâmetro")
 def obter_estatisticas_parametro(twin_id: str, parameter: str):
@@ -143,9 +119,6 @@ def obter_estatisticas_parametro(twin_id: str, parameter: str):
         "statistics": stats
     }
 
-# ─────────────────────────────────────────────────────────────
-# EXPORTAÇÃO
-# ─────────────────────────────────────────────────────────────
 
 @router.get("/{twin_id}/export/state", summary="Exporta estado atual para JSON")
 def exportar_estado(twin_id: str):
