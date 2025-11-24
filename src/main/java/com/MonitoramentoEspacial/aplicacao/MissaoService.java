@@ -3,6 +3,7 @@ package com.MonitoramentoEspacial.aplicacao;
 import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.Missao;
 import com.MonitoramentoEspacial.aplicacao.dominio.ProtocoloEmergencial;
+import com.MonitoramentoEspacial.aplicacao.dominio.StatusMissao;
 import com.MonitoramentoEspacial.interfaceExterna.AcionarProtocoloRequest;
 import com.MonitoramentoEspacial.interfaceExterna.CriarMissaoRequest;
 import com.MonitoramentoEspacial.interfaceExterna.EventoDTO;
@@ -69,6 +70,7 @@ public class MissaoService implements MissaoServiceInterface {
     public MissaoDTO criarMissao(CriarMissaoRequest request) {
         log.info("Iniciando processo de criação de missão: {}", request.getNome());
         Missao missao = missaoMapper.toEntity(request);
+        missao.setStatus(StatusMissao.PLANEJADA);
 
         if (request.getTripulacaoIds() != null && !request.getTripulacaoIds().isEmpty()) {
             List<Astronauta> tripulacao = astronautaRepository.findAllById(request.getTripulacaoIds());

@@ -1,16 +1,14 @@
 package com.MonitoramentoEspacial.aplicacao;
 
-import javax.annotation.processing.Generated;
-
-import org.springframework.stereotype.Component;
-
 import com.MonitoramentoEspacial.aplicacao.dominio.OperadorDeMissao;
 import com.MonitoramentoEspacial.interfaceExterna.CriarOperadorRequest;
 import com.MonitoramentoEspacial.interfaceExterna.OperadorDeMissaoDTO;
+import javax.annotation.processing.Generated;
+import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-17T21:29:37-0300",
+    date = "2025-11-24T16:58:00-0300",
     comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251023-0518, environment: Java 21.0.8 (Eclipse Adoptium)"
 )
 @Component

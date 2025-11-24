@@ -1,29 +1,19 @@
 services:
   app:
     build: .
-    container_name: monitoramento-espacial-app # Nome do container atualizado
+    container_name: monitoramento-espacial-app 
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: "prod"
-      SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/monitoramento_db" # Nome do DB atualizado
-      SPRING_DATASOURCE_USERNAME: "user" # Usuário mais genérico
-      SPRING_DATASOURCE_PASSWORD: "password" # Senha mais genérica
+      # --- Conexão Neon (Nuvem) ---
+      # Garante que o Docker use estas credenciais, ignorando o local
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://ep-tiny-dust-adys1axb-pooler.c-2.us-east-1.aws.neon.tech:5432/neondb?sslmode=require"
+      SPRING_DATASOURCE_USERNAME: "neondb_owner"
+      SPRING_DATASOURCE_PASSWORD: "npg_WhI5DaSvtXo1"
+      # Configurações do JPA
       SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
-    depends_on:
-      - db
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
 
-  db:
-    image: postgres:16-alpine
-    container_name: monitoramento-db # Nome do container atualizado
-    environment:
-      POSTGRES_DB: "monitoramento_db" # Nome do DB atualizado
-      POSTGRES_USER: "user"
-      POSTGRES_PASSWORD: "password"
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+# Não precisamos mais de volumes locais pois o banco está na nuvem
