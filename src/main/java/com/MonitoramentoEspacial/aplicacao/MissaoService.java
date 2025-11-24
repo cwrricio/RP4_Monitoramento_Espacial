@@ -15,8 +15,7 @@ import com.MonitoramentoEspacial.middleware.ProtocoloEmergencialRepository;
 import com.MonitoramentoEspacial.aplicacao.dominio.Evento;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service; // Removido @Autowired do import se não usado em outro lugar
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -30,16 +29,15 @@ public class MissaoService implements MissaoServiceInterface {
     // --- Repositórios ---
     private final MissaoRepository missaoRepository;
     private final AstronautaRepository astronautaRepository;
-    private final EventoRepository eventoRepository; // NOVO
-    private final ProtocoloEmergencialRepository protocoloRepository; // NOVO
+    private final EventoRepository eventoRepository;
+    private final ProtocoloEmergencialRepository protocoloRepository;
 
     // --- Mappers ---
     private final MissaoMapper missaoMapper;
-    private final EventoMapper eventoMapper; // NOVO
-    private final ProtocoloEmergencialMapper protocoloMapper; // NOVO
+    private final EventoMapper eventoMapper;
+    private final ProtocoloEmergencialMapper protocoloMapper;
 
-    // Injeção de dependência via construtor
-    @Autowired
+    // Injeção de dependência via construtor (Sem @Autowired explícito)
     public MissaoService(MissaoRepository missaoRepository, 
                          AstronautaRepository astronautaRepository, 
                          EventoRepository eventoRepository, 
