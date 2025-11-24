@@ -21,9 +21,7 @@ from core.digital_twin import (
 twin_manager = TwinManager()
 
 
-# ─────────────────────────────────────────────────────────────
-# ADAPTADOR DE SIMULAÇÃO → DIGITAL TWIN
-# ─────────────────────────────────────────────────────────────
+
 
 class SimulationTwinAdapter:
     """
@@ -99,9 +97,9 @@ def enhance_rocket_with_twin(rocket_sim):
     return rocket_sim
 
 
-# ─────────────────────────────────────────────────────────────
+
 # MELHORIA DE OrbitalSimulation COM DIGITAL TWIN
-# ─────────────────────────────────────────────────────────────
+
 
 def enhance_orbital_with_twin(orbital_sim):
     twin_id = f"orbital_twin_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
