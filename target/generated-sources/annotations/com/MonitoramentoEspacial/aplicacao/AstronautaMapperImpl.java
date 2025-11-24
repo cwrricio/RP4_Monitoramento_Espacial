@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-22T14:30:05-0300",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251023-0518, environment: Java 21.0.8 (Eclipse Adoptium)"
+    date = "2025-11-24T17:59:57-0300",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.44.0.v20251118-1623, environment: Java 24.0.2 (Oracle Corporation)"
 )
 @Component
 public class AstronautaMapperImpl implements AstronautaMapper {
@@ -21,17 +21,17 @@ public class AstronautaMapperImpl implements AstronautaMapper {
 
         Astronauta astronauta = new Astronauta();
 
-        if ( request.getAtivo() != null ) {
-            astronauta.setAtivo( request.getAtivo() );
-        }
+        astronauta.setNome( request.getNome() );
         if ( request.getIdade() != null ) {
             astronauta.setIdade( request.getIdade() );
         }
-        astronauta.setNome( request.getNome() );
+        if ( request.getAtivo() != null ) {
+            astronauta.setAtivo( request.getAtivo() );
+        }
+        astronauta.setNivelAptidaoMedica( request.getNivelAptidaoMedica() );
         if ( request.getMissoesRealizadas() != null ) {
             astronauta.setMissoesRealizadas( request.getMissoesRealizadas() );
         }
-        astronauta.setNivelAptidaoMedica( request.getNivelAptidaoMedica() );
 
         return astronauta;
     }
