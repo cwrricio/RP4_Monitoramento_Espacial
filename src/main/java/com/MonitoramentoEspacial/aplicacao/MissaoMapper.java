@@ -5,47 +5,67 @@ import com.MonitoramentoEspacial.aplicacao.dominio.Missao;
 import com.MonitoramentoEspacial.aplicacao.dominio.StatusMissao;
 import com.MonitoramentoEspacial.interfaceExterna.CriarMissaoRequest;
 import com.MonitoramentoEspacial.interfaceExterna.MissaoDTO;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.stereotype.Component;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Mapper (via MapStruct) para conversão entre Entidades Missao e DTOs.
- * componentModel = "spring" torna esta interface um Bean gerenciado pelo Spring.
+ * Mapper Manual para Missao.
+ * Substitui a interface MapStruct para evitar erros de mapeamento de coleções complexas.
  */
-@Mapper(componentModel = "spring")
-public interface MissaoMapper {
+@Component
+public class MissaoMapper {
 
     /**
-     * Converte o DTO de criação em uma Entidade.
-     * Define o status inicial como PLANEJADA.
+     * Converte Entidade -> DTO
      */
-    @Mapping(target = "status", expression = "java(com.MonitoramentoEspacial.aplicacao.dominio.StatusMissao.PLANEJADA)")
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "dataFim", ignore = true)
-    @Mapping(target = "tripulacao", ignore = true)
-    @Mapping(target = "operadorResponsavel", ignore = true)
-    @Mapping(target = "espaconave", ignore = true)
-    @Mapping(target = "simulacoes", ignore = true)
-    @Mapping(target = "protocolos", ignore = true)
-    @Mapping(target = "eventos", ignore = true)
-    Missao toEntity(CriarMissaoRequest request);
+    public MissaoDTO toDTO(Missao missao) {
+        if (missao == null) {
+            return null;
+        }
+
+        // Lógica manual segura para converter List<Astronauta> -> List<Long>
+        List<Long> tripulacaoIds = Collections.emptyList();
+        
+        // Verifica se a lista existe e não está vazia antes de fazer o stream
+        if (missao.getTripulacao() != null && !missao.getTripulacao().isEmpty()) {
+            tripulacaoIds = missao.getTripulacao().stream()
+                    .map(Astronauta::getId)
+                    .collect(Collectors.toList());
+        }
+
+        return new MissaoDTO(
+                missao.getId(),
+                missao.getNome(),
+                missao.getObjetivo(),
+                missao.getDataInicio(),
+                missao.getDataFim(),
+                missao.getStatus(),
+                tripulacaoIds
+        );
+    }
 
     /**
-     * Converte a Entidade Missao em seu DTO de resposta.
-     * O MapStruct automaticamente entende que "tripulacao" (List<Astronauta>)
-     * deve ser mapeado para "tripulacaoIds" (List<Long>)
-     * usando o método auxiliar "astronautaToId" abaixo.
+     * Converte Request -> Entidade
      */
-    @Mapping(source = "tripulacao", target = "tripulacaoIds")
-    MissaoDTO toDTO(Missao missao);
+    public Missao toEntity(CriarMissaoRequest request) {
+        if (request == null) {
+            return null;
+        }
 
-    /**
-     * Método auxiliar para o MapStruct saber como converter List<Astronauta>
-     * em List<Long>.
-     */
-    default Long astronautaToId(Astronauta astronauta) {
-        return astronauta.getId();
+        Missao missao = new Missao();
+        missao.setNome(request.getNome());
+        missao.setObjetivo(request.getObjetivo());
+        missao.setDataInicio(request.getDataInicio());
+        
+        // Define o status inicial padrão
+        missao.setStatus(StatusMissao.PLANEJADA);
+
+        // Nota: tripulacao, eventos, protocolos, simulacoes e espaconave
+        // são inicializados vazios ou nulos e preenchidos posteriormente pelo serviço.
+        
+        return missao;
     }
 }

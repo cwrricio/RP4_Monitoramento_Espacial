@@ -16,7 +16,6 @@ import com.MonitoramentoEspacial.middleware.ProtocoloEmergencialRepository;
 import com.MonitoramentoEspacial.aplicacao.dominio.Evento;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,16 +30,15 @@ public class MissaoService implements MissaoServiceInterface {
     // --- Repositórios ---
     private final MissaoRepository missaoRepository;
     private final AstronautaRepository astronautaRepository;
-    private final EventoRepository eventoRepository; // NOVO
-    private final ProtocoloEmergencialRepository protocoloRepository; // NOVO
+    private final EventoRepository eventoRepository;
+    private final ProtocoloEmergencialRepository protocoloRepository;
 
     // --- Mappers ---
     private final MissaoMapper missaoMapper;
-    private final EventoMapper eventoMapper; // NOVO
-    private final ProtocoloEmergencialMapper protocoloMapper; // NOVO
+    private final EventoMapper eventoMapper;
+    private final ProtocoloEmergencialMapper protocoloMapper;
 
-    // Injeção de dependência via construtor
-    @Autowired
+    // Construtor sem @Autowired (opcional em versões novas do Spring, mas funciona com ou sem)
     public MissaoService(MissaoRepository missaoRepository, 
                          AstronautaRepository astronautaRepository, 
                          EventoRepository eventoRepository, 
@@ -74,6 +72,7 @@ public class MissaoService implements MissaoServiceInterface {
 
         if (request.getTripulacaoIds() != null && !request.getTripulacaoIds().isEmpty()) {
             List<Astronauta> tripulacao = astronautaRepository.findAllById(request.getTripulacaoIds());
+            // Validação extra: garantir que achou todos os IDs solicitados
             if (tripulacao.size() != request.getTripulacaoIds().size()) {
                 log.warn("Tentativa de criar missão com astronautas inexistentes.");
                 throw new RecursoNaoEncontradoException("Um ou mais astronautas não encontrados.");

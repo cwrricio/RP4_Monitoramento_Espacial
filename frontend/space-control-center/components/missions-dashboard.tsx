@@ -66,6 +66,37 @@ export function MissionsDashboard() {
     )
   }
 
+  // Carrega as missões quando o componente abre
+  useEffect(() => {
+    loadMissions()
+  }, [])
+
+  // Função auxiliar para atualizar a lista quando uma nova missão for criada
+  const handleMissionCreated = () => {
+    setIsSheetOpen(false)
+    loadMissions() // Recarrega a lista do servidor
+  }
+
+  // Função de filtro atualizada para usar os dados reais
+  const filterMissions = (statusFilter?: string) => {
+    if (!statusFilter) return missions
+    
+    // O Backend retorna status em MAIÚSCULO (ex: "PLANEJADA"), 
+    // mas o mock usava "Planejada". Vamos normalizar se necessário.
+    return missions.filter((m) => m.status === statusFilter)
+  }
+
+  // Função para adaptar o DTO do Java para o formato que o MissionCard espera
+  // (Se o MissionCard esperar props específicas como 'destination')
+  const mapToCardProps = (m: MissaoDTO) => ({
+    id: m.id,
+    name: m.nome, // Traduzindo 'nome' -> 'name'
+    destination: "Espaço Profundo", // Backend ainda não tem destino, usamos um padrão
+    launchDate: m.dataInicio, // Traduzindo 'dataInicio' -> 'launchDate'
+    status: m.status,
+    description: m.objetivo, // Traduzindo 'objetivo' -> 'description'
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -81,9 +112,9 @@ export function MissionsDashboard() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="planned">Planejadas</TabsTrigger>
-          <TabsTrigger value="ongoing">Em Andamento</TabsTrigger>
-          <TabsTrigger value="completed">Concluídas</TabsTrigger>
+          <TabsTrigger value="PLANEJADA">Planejadas</TabsTrigger>
+          <TabsTrigger value="EM_ANDAMENTO">Em Andamento</TabsTrigger>
+          <TabsTrigger value="CONCLUIDA">Concluídas</TabsTrigger>
         </TabsList>
 
         {/* Visão Geral */}
@@ -130,7 +161,12 @@ export function MissionsDashboard() {
         })}
       </Tabs>
 
-      <NewMissionSheet open={isSheetOpen} onOpenChange={setIsSheetOpen} />
+      {/* Passamos a função de recarregar para o Sheet */}
+      <NewMissionSheet 
+        open={isSheetOpen} 
+        onOpenChange={setIsSheetOpen} 
+        onSuccess={handleMissionCreated} 
+      />
     </div>
   )
 }

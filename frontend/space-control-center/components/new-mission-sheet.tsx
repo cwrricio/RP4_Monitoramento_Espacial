@@ -26,12 +26,14 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
   const [objetivo, setObjetivo] = useState("")
   const [dataInicio, setDataInicio] = useState<Date>()
   const [crewOpen, setCrewOpen] = useState(false)
-  const [selectedCrew, setSelectedCrew] = useState<string[]>([])
+  
+  // O estado selecionado mantém strings (IDs do front), convertemos ao enviar
+  const [selectedCrew, setSelectedCrew] = useState<string[]>([]) 
   const [astronauts, setAstronauts] = useState<AstronautDTO[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  // Fetch astronauts when sheet opens
+  // Carrega astronautas ao abrir o modal
   useEffect(() => {
     if (open) {
       AstronautAPI.listar()
@@ -64,11 +66,19 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
 
     setIsSubmitting(true)
     try {
+      // CORREÇÃO 1: Formatar data para YYYY-MM-DD
+      // O Java LocalDate falha se receber ISO string com hora (T00:00:00.000Z)
+      const dataFormatada = format(dataInicio, "yyyy-MM-dd")
+
+      // CORREÇÃO 2: Converter IDs de string para number
+      // O DTO do Backend espera List<Long>, o front estava mandando string[]
+      const tripulacaoNumerica = selectedCrew.map((id) => Number(id))
+
       const data: CriarMissaoRequest = {
         nome,
         objetivo,
-        dataInicio: dataInicio.toISOString(),
-        tripulacaoIds: selectedCrew,
+        dataInicio: dataFormatada,
+        tripulacaoIds: tripulacaoNumerica,
       }
 
       await MissionAPI.criar(data)
@@ -79,17 +89,18 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
       })
 
       onOpenChange(false)
-      onSuccess?.()
+      onSuccess?.() // Atualiza a lista no dashboard
 
-      // Reset form
+      // Reset do formulário
       setNome("")
       setObjetivo("")
       setDataInicio(undefined)
       setSelectedCrew([])
     } catch (error) {
+      console.error(error)
       toast({
         title: "Erro",
-        description: "Falha ao criar missão. Tente novamente.",
+        description: "Falha ao criar missão. Verifique os dados.",
         variant: "destructive",
       })
     } finally {

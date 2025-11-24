@@ -201,16 +201,20 @@ export interface MissaoDTO {
   nome: string
   objetivo: string
   dataInicio: string
+  dataFim?: string // O Backend pode mandar dataFim nula
   status: "PLANEJADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "FALHOU"
-  tripulacao: AstronautDTO[]
+  // CORREÇÃO: O Backend manda uma lista de números (IDs), não objetos completos
+  tripulacaoIds: number[] 
 }
 
 export interface CriarMissaoRequest {
   nome: string
   objetivo: string
   dataInicio: string
-  tripulacaoIds: string[]
+  // CORREÇÃO: Garantir que enviamos números para o Java (List<Long>)
+  tripulacaoIds: number[] 
 }
+
 
 // ============================================
 // EVENT DTOs
