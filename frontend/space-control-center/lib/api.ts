@@ -216,6 +216,8 @@ export interface CriarMissaoRequest {
 }
 
 
+
+
 // ============================================
 // EVENT DTOs
 // ============================================
@@ -259,13 +261,22 @@ export class MissionAPI {
     return response.json()
   }
 
+  // Dentro de lib/api.ts, na classe MissionAPI
+
   static async criar(data: CriarMissaoRequest): Promise<MissaoDTO> {
     const response = await fetch(`${API_BASE_URL}/missoes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-    if (!response.ok) throw new Error("Failed to create mission")
+
+    // MUDANÇA AQUI: Se der erro, lemos o texto da resposta para saber o motivo
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Erro detalhado do Backend:", errorText)
+      throw new Error(`Falha ao criar missão: ${errorText}`)
+    }
+
     return response.json()
   }
 
@@ -283,6 +294,8 @@ export class MissionAPI {
     })
     if (!response.ok) throw new Error("Failed to delete mission")
   }
+
+  
 }
 
 // ============================================

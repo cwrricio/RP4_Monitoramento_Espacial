@@ -1,5 +1,6 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
+import com.fasterxml.jackson.annotation.JsonFormat; // <-- IMPORTAR ISSO
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -14,24 +15,15 @@ public class CriarMissaoRequest {
     private String objetivo;
 
     @NotNull(message = "A data de início é obrigatória")
+    // CORREÇÃO CRÍTICA: Ensina o Jackson a ler a data
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dataInicio;
 
-    // O Frontend deve enviar uma lista de números: [1, 2, 5]
     private List<Long> tripulacaoIds;
 
-    // --- Construtor Vazio (Obrigatório para o JSON funcionar) ---
     public CriarMissaoRequest() {
     }
 
-    // --- Construtor Completo ---
-    public CriarMissaoRequest(String nome, String objetivo, LocalDate dataInicio, List<Long> tripulacaoIds) {
-        this.nome = nome;
-        this.objetivo = objetivo;
-        this.dataInicio = dataInicio;
-        this.tripulacaoIds = tripulacaoIds;
-    }
-
-    // --- Getters e Setters ---
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
