@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste WebSocket</title>
+</head>
+<body>
+    <h1>Teste de Conectividade WebSocket</h1>
+    <div id="status">Desconectado</div>
+    <div id="logs"></div>
+    <button onclick="conectar()">Conectar</button>
+    <button onclick="desconectar()">Desconectar</button>
+    <button onclick="enviarMensagem()">Enviar Teste</button>
+
+    <script>
+        let ws = null;
+        const WS_URL = 'ws://localhost:8000/ws';
+        
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            logs.appendChild(div);
+            console.log(message);
+        }
+        
+        function conectar() {
+            try {
+                log('Tentando conectar em: ' + WS_URL);
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = function() {
+                    log('✅ WebSocket conectado!');
+                    document.getElementById('status').textContent = 'Conectado';
+                };
+                
+                ws.onmessage = function(event) {
+                    log('📨 Mensagem recebida: ' + event.data);
+                };
+                
+                ws.onerror = function(error) {
+                    log('❌ Erro WebSocket: ' + JSON.stringify(error));
+                    log('❌ Erro tipo: ' + error.type);
+                    log('❌ ReadyState: ' + (ws ? ws.readyState : 'null'));
+                };
+                
+                ws.onclose = function(event) {
+                    log('🔌 WebSocket desconectado. Code: ' + event.code + ', Reason: ' + event.reason);
+                    document.getElementById('status').textContent = 'Desconectado';
+                };
+                
+            } catch (error) {
+                log('❌ Erro ao criar WebSocket: ' + error.message);
+            }
+        }
+        
+        function desconectar() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function enviarMensagem() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({teste: 'mensagem de teste'}));
+                log('📤 Mensagem enviada');
+            } else {
+                log('❌ WebSocket não conectado');
+            }
+        }
+        
+        // Auto conectar
+        setTimeout(conectar, 1000);
+    </script>
+</body>
+</html>

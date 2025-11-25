@@ -13,6 +13,15 @@ services:
     depends_on:
       - db
 
+  python-simulator:
+    build: ./simulacao-python
+    container_name: python-simulator
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     container_name: monitoramento-db # Nome do container atualizado

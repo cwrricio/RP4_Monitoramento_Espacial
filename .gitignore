@@ -1,7 +1,197 @@
-.vscode
-./target
-./build
-./.gradle       
-/out
-git# Ignora todos os arquivos .class em qualquer pasta
+# ============================================================================
+# CONFIGURAÇÃO GITIGNORE PARA PROJETO DE MONITORAMENTO ESPACIAL
+# ============================================================================
+
+# ========================= READMES E DOCUMENTAÇÃO =========================
+README*.md
+readme*.md
+README*.txt
+readme*.txt
+*.README
+*.readme
+
+# ========================= DADOS SENSÍVEIS =========================
+# Configurações de ambiente
+.env
+.env.*
+*.env
+config.properties
+application-*.properties
+application-*.yml
+application-*.yaml
+
+# Credenciais e chaves
+*.key
+*.pem
+*.p12
+*.jks
+credentials.json
+secrets.*
+auth.*
+token.*
+api-keys.*
+
+# Logs e dados sensíveis
+*.log
+logs/
+*.log.*
+*.out
+
+# ========================= JAVA/SPRING BOOT =========================
+target/
+build/
+.gradle/
+out/
 *.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Gradle
+gradle/
+gradlew
+gradlew.bat
+
+# Spring Boot
+spring.log
+*.original
+
+# ========================= PYTHON =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# ========================= NODE.JS/FRONTEND =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+.next/
+out/
+build/
+dist/
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ========================= DATABASE =========================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# PostgreSQL
+*.sql
+*.backup
+*.dump
+
+# ========================= DOCKER =========================
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ========================= IDE E EDITORES =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# IntelliJ IDEA
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.metadata
+
+# ========================= SISTEMA OPERACIONAL =========================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.directory
+
+# ========================= OUTROS =========================
+# Temporários
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*.old
+
+# Configurações locais
+local.properties
+.local
+*.local
+
+# Cache
+.cache/
+*.cache

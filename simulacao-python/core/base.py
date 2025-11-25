@@ -1,5 +1,6 @@
 import json
 import os
+import asyncio
 from datetime import datetime
 from abc import ABC, abstractmethod
 import numpy as np
@@ -46,21 +47,60 @@ class Simulacao(ABC):
 
 
     def notify_simulation_update(self, data: Dict[str, Any]):
+        """Wrapper síncrono para notificação de atualização da simulação"""
+        try:
+            asyncio.run(self._notify_simulation_update_async(data))
+        except RuntimeError:
+            # Se já estivermos em um loop de evento, criar task
+            loop = asyncio.get_event_loop()
+            loop.create_task(self._notify_simulation_update_async(data))
+    
+    async def _notify_simulation_update_async(self, data: Dict[str, Any]):
         """Notifica observers sobre atualização da simulação"""
         for observer in self._simulation_observers:
-            observer.on_simulation_update(self.tipo, data)
+            if hasattr(observer.on_simulation_update, '__call__'):
+                if asyncio.iscoroutinefunction(observer.on_simulation_update):
+                    await observer.on_simulation_update(self.tipo, data)
+                else:
+                    observer.on_simulation_update(self.tipo, data)
 
 
     def notify_simulation_complete(self, results: Dict[str, Any]):
+        """Wrapper síncrono para notificação de conclusão da simulação"""
+        try:
+            asyncio.run(self._notify_simulation_complete_async(results))
+        except RuntimeError:
+            # Se já estivermos em um loop de evento, criar task
+            loop = asyncio.get_event_loop()
+            loop.create_task(self._notify_simulation_complete_async(results))
+    
+    async def _notify_simulation_complete_async(self, results: Dict[str, Any]):
         """Notifica observers sobre conclusão da simulação"""
         for observer in self._simulation_observers:
-            observer.on_simulation_complete(self.tipo, results)
+            if hasattr(observer.on_simulation_complete, '__call__'):
+                if asyncio.iscoroutinefunction(observer.on_simulation_complete):
+                    await observer.on_simulation_complete(self.tipo, results)
+                else:
+                    observer.on_simulation_complete(self.tipo, results)
 
 
     def notify_emergency(self, emergency_type: str, simulation_data: Dict[str, Any]):
+        """Wrapper síncrono para notificação de emergência"""
+        try:
+            asyncio.run(self._notify_emergency_async(emergency_type, simulation_data))
+        except RuntimeError:
+            # Se já estivermos em um loop de evento, criar task
+            loop = asyncio.get_event_loop()
+            loop.create_task(self._notify_emergency_async(emergency_type, simulation_data))
+    
+    async def _notify_emergency_async(self, emergency_type: str, simulation_data: Dict[str, Any]):
         """Notifica observers sobre emergências"""
         for observer in self._emergency_observers:
-            observer.on_emergency_detected(emergency_type, simulation_data)
+            if hasattr(observer.on_emergency_detected, '__call__'):
+                if asyncio.iscoroutinefunction(observer.on_emergency_detected):
+                    await observer.on_emergency_detected(emergency_type, simulation_data)
+                else:
+                    observer.on_emergency_detected(emergency_type, simulation_data)
 
 
     # Métodos abstratos originais (mantidos intactos)

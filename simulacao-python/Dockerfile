@@ -1,5 +1,5 @@
 # 1. Imagem base do Python
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 # 2. Diretório de trabalho dentro do container
 WORKDIR /app
@@ -14,4 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 
 # 6. Comando para rodar a API
-CMD ["uvicorn", "api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
