@@ -8,37 +8,64 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-type MissionStatus = "Planejada" | "Em Andamento" | "Concluída"
-
+// Interface flexível para aceitar tanto status do Java quanto legados
 interface Mission {
   id: string
   name: string
   destination: string
   launchDate: string
-  status: MissionStatus
+  status: string 
   description: string
 }
 
-const statusConfig: Record<MissionStatus, { variant: "default" | "secondary" | "outline"; className: string }> = {
-  Planejada: { variant: "default", className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20" },
-  "Em Andamento": { variant: "secondary", className: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20" },
-  Concluída: { variant: "outline", className: "bg-green-500/10 text-green-500 hover:bg-green-500/20" },
+// Configuração expandida para aceitar os ENUMS do Java (Maiúsculo)
+const statusConfig: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; className: string; label: string }> = {
+  // Status vindos do JAVA (Backend)
+  "PLANEJADA": { 
+    variant: "default", 
+    className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+    label: "Planejada"
+  },
+  "EM_ANDAMENTO": { 
+    variant: "secondary", 
+    className: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+    label: "Em Andamento"
+  },
+  "CONCLUIDA": { 
+    variant: "outline", 
+    className: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+    label: "Concluída"
+  },
+  "FALHOU": { 
+    variant: "destructive", 
+    className: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
+    label: "Falhou"
+  },
+
+  // Status Legados (para compatibilidade)
+  "Planejada": { variant: "default", className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20", label: "Planejada" },
+  "Em Andamento": { variant: "secondary", className: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20", label: "Em Andamento" },
+  "Concluída": { variant: "outline", className: "bg-green-500/10 text-green-500 hover:bg-green-500/20", label: "Concluída" },
 }
 
 export function MissionCard({ mission }: { mission: Mission }) {
   const [isSimulationOpen, setIsSimulationOpen] = useState(false)
-  const statusStyle = statusConfig[mission.status]
+
+  // CORREÇÃO DE SEGURANÇA: Fallback se o status não existir no mapa
+  const statusStyle = statusConfig[mission.status] || { 
+    variant: "outline", 
+    className: "text-gray-500 border-gray-500",
+    label: mission.status 
+  }
 
   const getMissionAnimation = (missionName: string) => {
-    // Mapeia nomes de missões para animações específicas
     const animations: Record<string, string> = {
-      "Missão Alpha Centauri": "/foguete_20251110_163829.gif", // ← CORRIGIDO: removido /public
+      "Missão Alpha Centauri": "/foguete_20251110_163829.gif",
       "Missão Marte Base": "/foguete_20251110_163829.gif",
       "Missão Europa": "/animations/europa-mission.gif",
       "Missão Titã": "/animations/titan-mission.gif",
       "Missão Estação Orbital": "/orbita_20251110_165300.gif",
     }
-    
     return animations[missionName] || "/animations/default-rocket.gif"
   }
 
@@ -76,8 +103,9 @@ export function MissionCard({ mission }: { mission: Mission }) {
             <Calendar className="h-4 w-4" />
             <span>Lançamento: {mission.launchDate}</span>
           </div>
+          {/* Usa o label traduzido e seguro */}
           <Badge variant={statusStyle.variant} className={statusStyle.className}>
-            {mission.status}
+            {statusStyle.label}
           </Badge>
           <p className="text-sm text-muted-foreground">{mission.description}</p>
         </CardContent>
@@ -85,7 +113,7 @@ export function MissionCard({ mission }: { mission: Mission }) {
           <Button 
             className="w-full" 
             onClick={handleStartSimulation}
-            disabled={mission.status === "Concluída"}
+            disabled={mission.status === "CONCLUIDA" || mission.status === "FALHOU"}
           >
             <Play className="mr-2 h-4 w-4" />
             Iniciar Simulação
@@ -118,7 +146,6 @@ export function MissionCard({ mission }: { mission: Mission }) {
                 alt={`Simulação da ${mission.name}`}
                 className="max-w-full h-auto rounded-lg"
                 onError={(e) => {
-                  // Fallback se a imagem não existir
                   console.error(`Imagem não encontrada: ${e.currentTarget.src}`)
                   e.currentTarget.src = "/animations/default-rocket.gif"
                   e.currentTarget.alt = "Simulação padrão"
@@ -136,7 +163,7 @@ export function MissionCard({ mission }: { mission: Mission }) {
                 <div>
                   <span className="font-medium text-sm">Status:</span>
                   <Badge variant={statusStyle.variant} className={statusStyle.className}>
-                    {mission.status}
+                    {statusStyle.label}
                   </Badge>
                 </div>
               </div>

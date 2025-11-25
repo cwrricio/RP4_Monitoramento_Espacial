@@ -40,8 +40,15 @@ public class Astronauta extends Funcionario {
     }
 
     public boolean podeSerTripulante() {
-        final String NIVEL_REQUERIDO = "APTO"; 
-        boolean temAptidaoMedica = NIVEL_REQUERIDO.equalsIgnoreCase(this.nivelAptidaoMedica);
-        return this.isAtivo() && temAptidaoMedica;
+        if (this.nivelAptidaoMedica == null) return false;
+
+        // Aceita "ALTO", "ALTA", "MEDIO", "APTO" - Flexibiliza a regra para bater com o Front
+        boolean aptidaoAceita = 
+            this.nivelAptidaoMedica.equalsIgnoreCase("ALTO") ||
+            this.nivelAptidaoMedica.equalsIgnoreCase("ALTA") ||
+            this.nivelAptidaoMedica.equalsIgnoreCase("MEDIO") ||
+            this.nivelAptidaoMedica.equalsIgnoreCase("APTO");
+
+        return this.isAtivo() && aptidaoAceita;
     }
 }

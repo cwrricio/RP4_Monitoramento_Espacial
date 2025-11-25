@@ -1,6 +1,6 @@
 package com.MonitoramentoEspacial.interfaceExterna;
 
-import com.fasterxml.jackson.annotation.JsonFormat; // <-- IMPORTAR ISSO
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -15,7 +15,6 @@ public class CriarMissaoRequest {
     private String objetivo;
 
     @NotNull(message = "A data de início é obrigatória")
-    // CORREÇÃO CRÍTICA: Ensina o Jackson a ler a data
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dataInicio;
 

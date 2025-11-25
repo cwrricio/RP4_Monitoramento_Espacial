@@ -261,8 +261,6 @@ export class MissionAPI {
     return response.json()
   }
 
-  // Dentro de lib/api.ts, na classe MissionAPI
-
   static async criar(data: CriarMissaoRequest): Promise<MissaoDTO> {
     const response = await fetch(`${API_BASE_URL}/missoes`, {
       method: "POST",
@@ -270,11 +268,11 @@ export class MissionAPI {
       body: JSON.stringify(data),
     })
 
-    // MUDANÇA AQUI: Se der erro, lemos o texto da resposta para saber o motivo
     if (!response.ok) {
+      // CORREÇÃO: Pega o texto limpo do backend e joga no erro
+      // Se for 400, vai vir: "Os seguintes astronautas estão inaptos..."
       const errorText = await response.text()
-      console.error("Erro detalhado do Backend:", errorText)
-      throw new Error(`Falha ao criar missão: ${errorText}`)
+      throw new Error(errorText) 
     }
 
     return response.json()
@@ -294,8 +292,6 @@ export class MissionAPI {
     })
     if (!response.ok) throw new Error("Failed to delete mission")
   }
-
-  
 }
 
 // ============================================
