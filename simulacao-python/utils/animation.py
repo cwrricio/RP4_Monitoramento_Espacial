@@ -12,7 +12,7 @@ try:
     PILLOW_AVAILABLE = True
 except ImportError:
     PILLOW_AVAILABLE = False
-    print("⚠️  Pillow não instalado. Execute: pip install pillow")
+    print("Pillow não instalado. Execute: pip install pillow")
 
 
 # Verificar se FFmpeg está disponível
@@ -52,16 +52,16 @@ class AnimationUtils:
         """
         # Verificar se animação é válida
         if ani is None:
-            print("❌ Erro: Objeto de animação é None")
+            print("Erro: Objeto de animação é None")
             return None
        
         # Criar diretório de saída
         output_dir = "animacoes"
         try:
             os.makedirs(output_dir, exist_ok=True)
-            print(f"📁 Diretório: {output_dir}/")
+            print(f"Diretório: {output_dir}/")
         except Exception as e:
-            print(f"❌ Erro ao criar diretório: {e}")
+            print(f"Erro ao criar diretório: {e}")
             return None
        
         # Gerar nome de arquivo
@@ -77,28 +77,28 @@ class AnimationUtils:
        
         if formato == 'gif':
             if not PILLOW_AVAILABLE:
-                print("❌ Pillow não está instalado!")
+                print("Pillow não está instalado!")
                 print("   Execute: pip install pillow")
                 return None
            
             filepath = os.path.join(output_dir, f"{filename}.gif")
             writer = PillowWriter(fps=fps)
-            print(f"💾 Salvando GIF: {filename}.gif")
+            print(f"Salvando GIF: {filename}.gif")
             print(f"   FPS: {fps}, DPI: {dpi}")
            
         elif formato == 'mp4':
             if not FFMPEG_AVAILABLE:
-                print("❌ FFmpeg não está disponível!")
+                print("FFmpeg não está disponível!")
                 print("   Instale FFmpeg e tente novamente, ou use formato='gif'")
                 return None
            
             filepath = os.path.join(output_dir, f"{filename}.mp4")
             writer = FFMpegWriter(fps=fps, metadata=dict(artist='SimulacaoPython'))
-            print(f"💾 Salvando MP4: {filename}.mp4")
+            print(f"Salvando MP4: {filename}.mp4")
             print(f"   FPS: {fps}, DPI: {dpi}")
            
         else:
-            print(f"❌ Formato '{formato}' inválido. Use 'gif' ou 'mp4'")
+            print(f"Formato '{formato}' inválido. Use 'gif' ou 'mp4'")
             return None
        
         # Salvar arquivo
@@ -111,20 +111,20 @@ class AnimationUtils:
             # Verificar se arquivo foi criado
             if os.path.exists(filepath):
                 tamanho_kb = os.path.getsize(filepath) / 1024
-                print(f"✅ SUCESSO! Animação salva!")
-                print(f"   📂 Local: {filepath}")
-                print(f"   📊 Tamanho: {tamanho_kb:.1f} KB")
+                print(f"SUCESSO! Animação salva!")
+                print(f"   Local: {filepath}")
+                print(f"   Tamanho: {tamanho_kb:.1f} KB")
                 return filepath
             else:
-                print(f"❌ Erro: Arquivo não foi criado em {filepath}")
+                print(f"Erro: Arquivo não foi criado em {filepath}")
                 return None
                
         except Exception as e:
-            print(f"❌ Erro ao salvar animação: {e}")
+            print(f"Erro ao salvar animação: {e}")
             print(f"   Tipo do erro: {type(e).__name__}")
            
             if formato == 'mp4':
-                print("\n💡 Dica: Tente usar formato='gif' em vez de 'mp4'")
+                print("\nDica: Tente usar formato='gif' em vez de 'mp4'")
            
             # Mostrar traceback completo para debug
             import traceback
@@ -157,7 +157,7 @@ class AnimationUtils:
         --------
         FuncAnimation : Objeto de animação
         """
-        print(f"🎬 Criando animação: {title}")
+        print(f"Criando animação: {title}")
         print(f"   Frames: {len(t)}, Intervalo: {interval}ms")
        
         # Criar figura
@@ -187,7 +187,7 @@ class AnimationUtils:
                           frames=len(t), interval=interval,
                           blit=True, repeat=True)
        
-        print("✅ Animação criada!")
+        print("Animação criada!")
         return ani
    
     @staticmethod
@@ -208,7 +208,7 @@ class AnimationUtils:
         --------
         FuncAnimation : Objeto de animação
         """
-        print(f"🛰️  Criando animação orbital: {title}")
+        print(f"Criando animação orbital: {title}")
         print(f"   Frames: {len(times)}")
        
         from matplotlib.patches import Circle
@@ -251,7 +251,7 @@ class AnimationUtils:
                           frames=len(times), interval=30,
                           blit=True, repeat=True)
        
-        print("✅ Animação orbital criada!")
+        print("Animação orbital criada!")
         return ani
    
     @staticmethod
@@ -313,7 +313,7 @@ class AnimationUtils:
                           frames=len(t), interval=20,
                           blit=True, repeat=True)
        
-        print("✅ Animação de reentrada criada!")
+        print("Animação de reentrada criada!")
         return ani
    
     @staticmethod
@@ -338,7 +338,7 @@ class AnimationUtils:
         --------
         FuncAnimation : Objeto de animação
         """
-        print(f"📊 Criando painel multigráfico")
+        print(f"Criando painel multigráfico")
         print(f"   Subplots: {layout[0]}x{layout[1]}")
        
         fig, axes = plt.subplots(*layout, figsize=figsize)
@@ -384,14 +384,14 @@ class AnimationUtils:
                           frames=max_frames, interval=30,
                           blit=True, repeat=True)
        
-        print("✅ Painel multigráfico criado!")
+        print("Painel multigráfico criado!")
         return ani
 
 # Verificação inicial ao importar
 if __name__ != "__main__":
     if not PILLOW_AVAILABLE:
         print("=" * 60)
-        print("⚠️  AVISO: Pillow não está instalado")
+        print("AVISO: Pillow não está instalado")
         print("   Para salvar animações como GIF, execute:")
         print("   pip install pillow")
         print("=" * 60)

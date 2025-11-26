@@ -11,7 +11,7 @@ export default function TestDashboard() { // Mude para export default
     setResult("")
     
     setTimeout(() => {
-      setResult("✅ Simulação iniciada com sucesso!")
+      setResult("Simulação iniciada com sucesso!")
       setLoading(false)
     }, 2000)
   }
@@ -30,7 +30,7 @@ export default function TestDashboard() { // Mude para export default
           disabled={loading}
           className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2 disabled:bg-gray-400"
         >
-          {loading ? "🔄 Iniciando..." : "🚀 Iniciar Simulação"}
+          {loading ? "Iniciando..." : "Iniciar Simulação"}
         </button>
         
         {result && (

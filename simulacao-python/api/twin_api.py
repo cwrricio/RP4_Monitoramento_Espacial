@@ -9,19 +9,24 @@ Permite consultar:
  - lista de twins
 """
 
+
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any, Optional
 from datetime import datetime
 
+
 from core.digital_twin import TwinManager, DigitalTwin
 
+
 twin_manager = TwinManager()
+
 
 router = APIRouter(
     prefix="/twin",
     tags=["Digital Twin"],
     responses={404: {"description": "Twin não encontrado"}}
 )
+
 
 def get_twin_or_404(twin_id: str) -> DigitalTwin:
     twin = twin_manager.get_twin(twin_id)
@@ -30,12 +35,16 @@ def get_twin_or_404(twin_id: str) -> DigitalTwin:
     return twin
 
 
+
+
 @router.get("/", summary="Lista todos os Digital Twins")
 def listar_twins():
     return {
         "total": len(twin_manager.twins),
         "twins": list(twin_manager.twins.keys())
     }
+
+
 
 
 @router.get("/{twin_id}", summary="Estado atual do Digital Twin")
@@ -48,6 +57,8 @@ def obter_estado_atual(twin_id: str):
     }
 
 
+
+
 @router.get("/{twin_id}/history", summary="Histórico completo do Digital Twin")
 def obter_historico(twin_id: str):
     twin = get_twin_or_404(twin_id)
@@ -56,6 +67,7 @@ def obter_historico(twin_id: str):
         "history_size": len(twin.historical_states),
         "history": list(twin.historical_states)
     }
+
 
 @router.get("/{twin_id}/history/at", summary="Estado por timestamp")
 def obter_estado_por_tempo(
@@ -67,15 +79,16 @@ def obter_estado_por_tempo(
         ts = datetime.fromisoformat(timestamp)
     except:
         raise HTTPException(status_code=400, detail="Formato de timestamp inválido")
-    
+   
     state = twin.get_state_at_time(ts)
     if state is None:
         raise HTTPException(status_code=404, detail="Nenhum estado encontrado próximo a esse horário")
-    
+   
     return {
         "twin_id": twin_id,
         "state": state.to_dict()
     }
+
 
 @router.get("/{twin_id}/anomalies", summary="Anomalias do Digital Twin")
 def obter_anomalias(twin_id: str):
@@ -87,9 +100,12 @@ def obter_anomalias(twin_id: str):
         "anomalies": anomalies
     }
 
+
 @router.get("/anomalies", summary="Anomalias de todos os Digital Twins")
 def obter_todas_anomalias():
     return twin_manager.get_all_anomalies()
+
+
 
 
 @router.get("/{twin_id}/predict", summary="Previsão de estado futuro")
@@ -112,7 +128,7 @@ def obter_estatisticas_parametro(twin_id: str, parameter: str):
     stats = twin.calculate_statistics(parameter)
     if not stats:
         raise HTTPException(status_code=404, detail="Parâmetro sem histórico")
-    
+   
     return {
         "twin_id": twin_id,
         "parameter": parameter,
@@ -125,7 +141,7 @@ def exportar_estado(twin_id: str):
     twin = get_twin_or_404(twin_id)
     filepath = f"{twin_id}_state.json"
     twin.export_state(filepath)
-    
+   
     return {
         "message": "Estado exportado com sucesso",
         "file": filepath
@@ -137,7 +153,7 @@ def exportar_historico(twin_id: str):
     twin = get_twin_or_404(twin_id)
     filepath = f"{twin_id}_history.json"
     twin.export_history(filepath)
-    
+   
     return {
         "message": "Histórico exportado com sucesso",
         "file": filepath

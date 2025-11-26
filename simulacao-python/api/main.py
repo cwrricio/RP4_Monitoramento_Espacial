@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import json
 import asyncio
@@ -17,6 +18,14 @@ app = FastAPI(
     title="Sistema de Simulação Espacial com Observer",
     description="API para simulações espaciais com notificações em tempo real",
     version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(twin_router)
@@ -56,36 +65,70 @@ class WebSocketObserver(SimulationObserver, EmergencyObserver):
 
 
     async def on_simulation_update(self, simulation_type, data: Dict[str, Any]):
+        # Serializar dados de forma segura
+        serializable_data = self._make_serializable(data)
         message = {
             'type': 'simulation_update',
             'simulation_id': self.sim_id,
-            'simulation_type': simulation_type.value,
-            'data': data,
+            'simulation_type': simulation_type.value if hasattr(simulation_type, 'value') else str(simulation_type),
+            'data': serializable_data,
             'timestamp': datetime.now().isoformat()
         }
-        await self.manager.broadcast(json.dumps(message))
+        try:
+            print(f"Enviando atualização WebSocket: {len(self.manager.active_connections)} conexões ativas")
+            print(f"Dados: status={data.get('status', 'N/A')}, progresso={data.get('progresso', 'N/A')}")
+            await self.manager.broadcast(json.dumps(message))
+        except Exception as e:
+            print(f"Erro ao enviar atualização WebSocket: {e}")
 
 
     async def on_simulation_complete(self, simulation_type, results: Dict[str, Any]):
+        # Serializar resultados de forma segura
+        serializable_results = self._make_serializable(results)
         message = {
             'type': 'simulation_complete',
             'simulation_id': self.sim_id,
-            'simulation_type': simulation_type.value,
-            'results': results,
+            'simulation_type': simulation_type.value if hasattr(simulation_type, 'value') else str(simulation_type),
+            'results': serializable_results,
             'timestamp': datetime.now().isoformat()
         }
-        await self.manager.broadcast(json.dumps(message))
+        try:
+            await self.manager.broadcast(json.dumps(message))
+        except Exception as e:
+            print(f"Erro ao enviar conclusão WebSocket: {e}")
 
 
     async def on_emergency_detected(self, emergency_type: str, simulation_data: Dict[str, Any]):
+        # Serializar dados de emergência de forma segura
+        serializable_data = self._make_serializable(simulation_data)
         message = {
             'type': 'emergency',
             'simulation_id': self.sim_id,
             'emergency_type': emergency_type,
-            'data': simulation_data,
+            'data': serializable_data,
             'timestamp': datetime.now().isoformat()
         }
-        await self.manager.broadcast(json.dumps(message))
+        try:
+            await self.manager.broadcast(json.dumps(message))
+        except Exception as e:
+            print(f"Erro ao enviar emergência WebSocket: {e}")
+   
+    def _make_serializable(self, obj):
+        """Converte objetos para formatos serializáveis em JSON"""
+        if isinstance(obj, dict):
+            return {k: self._make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_serializable(item) for item in obj]
+        elif hasattr(obj, 'value'):  # Enums
+            return obj.value
+        elif hasattr(obj, '__dict__'):  # Objetos customizados
+            return str(obj)
+        elif isinstance(obj, (int, float, str, bool)) or obj is None:
+            return obj
+        else:
+            return str(obj)
+
+
 
 
 # Endpoints da API
@@ -98,7 +141,7 @@ async def criar_simulacao_foguete(request: SimulacaoRequest):
         # Criar simulação
         sim = RocketSimulation()
         sim = enhance_rocket_with_twin(sim)
-        
+       
         # Configurar parâmetros personalizados se fornecidos
         if hasattr(request, 'tempo_maximo') and request.tempo_maximo:
             sim.t_max = request.tempo_maximo
@@ -290,7 +333,6 @@ def health_check():
         "timestamp": datetime.now().isoformat(),
         "simulacoes_ativas": len(simulacoes)
     }
-
 
 @app.get("/health")
 def health():
