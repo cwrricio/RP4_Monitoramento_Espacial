@@ -35,6 +35,7 @@ public class AmeacaService implements AmeacaServiceInterface {
     public AmeacaDTO registrarAmeaca(RegistrarAmeacaRequest request) {
         log.info("Processando nova ameaça para a missão ID: {}", request.missaoId());
 
+        @SuppressWarnings("null")
         Missao missao = missaoRepository.findById(request.missaoId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Missão não encontrada ID: " + request.missaoId()));
 

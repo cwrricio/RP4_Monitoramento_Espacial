@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Activity, AlertTriangle, CheckCircle2, Info, Shield, Stethoscope, Users, Wrench, XCircle } from "lucide-react"
+import { Activity, AlertTriangle, Bot, CheckCircle2, Info, Shield, Stethoscope, Users, Wrench, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +22,6 @@ interface MissionControlPanelProps {
 }
 
 export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
-  // Hooks customizados para buscar dados (SWR ou React Query)
   const { mission, isLoading: missionLoading, mutate: mutateMission } = useMission(missionId)
   const { events, mutate: mutateEvents } = useEvents(missionId)
   const { protocols, mutate: mutateProtocols } = useProtocols(missionId)
@@ -43,13 +42,9 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
         description: `Protocolo ${tipo} ativado com sucesso!`,
       })
       mutateProtocols()
-      mutateEvents() // Protocolos geram eventos, então atualizamos a lista
+      mutateEvents() 
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao acionar protocolo.",
-        variant: "destructive",
-      })
+      toast({ title: "Erro", description: "Falha ao acionar protocolo.", variant: "destructive" })
     } finally {
       setIsActivating(null)
     }
@@ -59,25 +54,16 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
     setIsCompleting(true)
     try {
       await MissionAPI.concluir(missionId)
-      toast({
-        title: "Missão Concluída",
-        description: "A missão foi encerrada com sucesso!",
-      })
+      toast({ title: "Missão Concluída", description: "A missão foi encerrada com sucesso!" })
       mutateMission()
-      // Opcional: Redirecionar para dashboard ou ficar na tela para ver o status "Concluída"
-      // router.push("/") 
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao concluir missão.",
-        variant: "destructive",
-      })
+      toast({ title: "Erro", description: "Falha ao concluir missão.", variant: "destructive" })
     } finally {
       setIsCompleting(false)
     }
   }
 
-  // --- AUXILIARES DE UI ---
+  // --- AUXILIARES ---
 
   const getEventIcon = (tipo: string) => {
     switch (tipo) {
@@ -107,7 +93,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
     }
   }
 
-  // --- RENDERIZAÇÃO ---
+  // --- RENDER ---
 
   if (missionLoading) {
     return (
@@ -132,7 +118,6 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Mission Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{mission.nome}</h1>
@@ -151,10 +136,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* =================================================================================
-            CORREÇÃO PRINCIPAL: TRIPULAÇÃO E BIOMETRIA
-            Agora itera sobre objetos AstronautaDTO completos, não IDs.
-           ================================================================================= */}
+        {/* Painel da Tripulação */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -166,25 +148,20 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {/* Verifica se a lista existe antes de mapear */}
+                {/* Lógica para Missão Não Tripulada vs Tripulada */}
                 {mission.tripulacao && mission.tripulacao.length > 0 ? (
                   mission.tripulacao.map((astronauta) => (
                     <div key={astronauta.id} className="border rounded-lg p-4 space-y-3">
-                      
-                      {/* Cabeçalho do Card do Astronauta */}
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold">{astronauta.nome}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Missões: {astronauta.missoesRealizadas}
-                          </p>
+                          <p className="text-sm text-muted-foreground">Missões: {astronauta.missoesRealizadas}</p>
                         </div>
                         <Badge variant={astronauta.ativo ? "default" : "secondary"}>
                           {astronauta.ativo ? "Ativo" : "Inativo"}
                         </Badge>
                       </div>
 
-                      {/* Seção de Biometria (Renderiza apenas se houver dados) */}
                       {astronauta.tipoBiometria ? (
                         <>
                           <Separator />
@@ -200,42 +177,34 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
                           </div>
                           {astronauta.registradoEm && (
                             <p className="text-xs text-muted-foreground">
-                              Atualizado:{" "}
-                              {formatDistanceToNow(new Date(astronauta.registradoEm), {
-                                addSuffix: true,
-                                locale: ptBR,
-                              })}
+                              Atualizado: {formatDistanceToNow(new Date(astronauta.registradoEm), { addSuffix: true, locale: ptBR })}
                             </p>
                           )}
                         </>
                       ) : (
-                        // Fallback elegante se não tiver biometria ainda
                         <div className="bg-muted/30 p-2 rounded text-center">
-                            <p className="text-xs text-muted-foreground italic">
-                                Aguardando sincronização biométrica...
-                            </p>
+                            <p className="text-xs text-muted-foreground italic">Aguardando dados biométricos...</p>
                         </div>
                       )}
 
-                      {/* Rodapé do Card do Astronauta */}
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs text-muted-foreground">Aptidão:</span>
-                        <Badge
-                          variant={
-                            astronauta.nivelAptidaoMedica === "ALTO" ? "default" :
-                            astronauta.nivelAptidaoMedica === "MEDIO" ? "secondary" : "destructive"
-                          }
-                          className="text-xs"
-                        >
-                          {astronauta.nivelAptidaoMedica}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{astronauta.nivelAptidaoMedica}</Badge>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-10">
-                    <Users className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-50" />
-                    <p className="text-muted-foreground">Nenhum astronauta na tripulação.</p>
+                  // UI de Missão Não Tripulada
+                  <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                    <div className="p-4 bg-blue-500/10 rounded-full">
+                        <Bot className="h-12 w-12 text-blue-500" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg">Missão Não Tripulada</h3>
+                        <p className="text-muted-foreground max-w-xs mx-auto text-sm">
+                            Esta missão é operada remotamente ou automatizada via sonda/satélite.
+                        </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -243,16 +212,14 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
           </CardContent>
         </Card>
 
-        {/* =================================================================================
-            LOG DE EVENTOS
-           ================================================================================= */}
+        {/* Log de Eventos */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
               Log de Eventos
             </CardTitle>
-            <CardDescription>Feed em tempo real dos eventos da missão</CardDescription>
+            <CardDescription>Feed em tempo real</CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
@@ -264,14 +231,9 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
                         <div className="mt-0.5">{getEventIcon(event.tipo)}</div>
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                            <Badge variant={getEventBadgeVariant(event.tipo)} className="text-xs">
-                                {event.tipo}
-                            </Badge>
+                            <Badge variant={getEventBadgeVariant(event.tipo)} className="text-xs">{event.tipo}</Badge>
                             <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(event.timestamp), {
-                                addSuffix: true,
-                                locale: ptBR,
-                                })}
+                                {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true, locale: ptBR })}
                             </span>
                             </div>
                             <p className="text-sm">{event.descricao}</p>
@@ -282,7 +244,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
                 ) : (
                     <div className="text-center py-8">
                     <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-2 opacity-50" />
-                    <p className="text-muted-foreground">Nenhum evento registrado até o momento.</p>
+                    <p className="text-muted-foreground">Nenhum evento registrado.</p>
                     </div>
                 )}
               </div>
@@ -291,9 +253,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
         </Card>
       </div>
 
-      {/* =================================================================================
-            PROTOCOLOS DE EMERGÊNCIA
-           ================================================================================= */}
+      {/* Protocolos */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -303,7 +263,6 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
           <CardDescription>Acione protocolos manuais em caso de falha sistêmica</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Botões Grandes de Ação */}
           <div className="grid gap-3 md:grid-cols-3">
             <Button
               variant="outline"
@@ -334,9 +293,8 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
             </Button>
           </div>
 
-          {/* Histórico de Protocolos */}
           <div>
-            <h4 className="font-semibold mb-3">Histórico de Protocolos Acionados</h4>
+            <h4 className="font-semibold mb-3">Histórico</h4>
             <ScrollArea className="h-[150px]">
               <div className="space-y-2">
                 {protocols && protocols.length > 0 ? (
@@ -347,10 +305,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
                             {protocol.tipo}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(protocol.acionadoEm), {
-                            addSuffix: true,
-                            locale: ptBR,
-                            })}
+                            {formatDistanceToNow(new Date(protocol.acionadoEm), { addSuffix: true, locale: ptBR })}
                         </span>
                         </div>
                         <p className="text-sm font-medium">{protocol.descricao}</p>
@@ -358,7 +313,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
                     ))
                 ) : (
                     <p className="text-center text-muted-foreground py-4 text-sm bg-muted/10 rounded border border-dashed">
-                        Nenhum protocolo acionado nesta missão.
+                        Nenhum protocolo acionado.
                     </p>
                 )}
               </div>

@@ -6,7 +6,6 @@ import com.MonitoramentoEspacial.interfaceExterna.OperadorDeMissaoDTO;
 import com.MonitoramentoEspacial.middleware.OperadorDeMissaoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +20,6 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
     private final OperadorDeMissaoRepository repository;
     private final OperadorDeMissaoMapper operadorMapper; // Injetado
 
-    @Autowired
     public OperadorDeMissaoService(OperadorDeMissaoRepository repository, OperadorDeMissaoMapper operadorMapper) {
         this.repository = repository;
         this.operadorMapper = operadorMapper;
@@ -33,6 +31,7 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
         log.info("Criando novo operador: {}", request.getNome());
         // MODIFICADO: Usa o mapper
         OperadorDeMissao operador = operadorMapper.toEntity(request);
+        @SuppressWarnings("null")
         OperadorDeMissao salvo = repository.save(operador);
         return operadorMapper.toDTO(salvo);
     }
@@ -40,6 +39,7 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
     @Override
     @Transactional(readOnly = true)
     public OperadorDeMissaoDTO buscarPorId(Long id) {
+        @SuppressWarnings("null")
         OperadorDeMissao operador = repository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Operador não encontrado com ID: " + id));
         return operadorMapper.toDTO(operador);
@@ -59,6 +59,7 @@ public class OperadorDeMissaoService implements OperadorDeMissaoServiceInterface
             .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     public void deletarOperador(Long id) {

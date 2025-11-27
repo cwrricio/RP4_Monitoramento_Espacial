@@ -17,6 +17,7 @@ interface Mission {
   description: string
 }
 
+// Configuração segura com todas as cores
 const statusConfig: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; className: string; label: string }> = {
   "PLANEJADA": { variant: "default", className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20", label: "Planejada" },
   "EM_ANDAMENTO": { variant: "secondary", className: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20", label: "Em Andamento" },
@@ -24,7 +25,6 @@ const statusConfig: Record<string, { variant: "default" | "secondary" | "outline
   "FALHOU": { variant: "destructive", className: "bg-red-500/10 text-red-500 hover:bg-red-500/20", label: "Falhou" },
 }
 
-// Props atualizadas: Recebe onDelete e onEdit
 interface MissionCardProps {
     mission: Mission
     onDelete: (id: string) => void
@@ -33,7 +33,13 @@ interface MissionCardProps {
 
 export function MissionCard({ mission, onDelete, onEdit }: MissionCardProps) {
   const [isSimulationOpen, setIsSimulationOpen] = useState(false)
-  const statusStyle = statusConfig[mission.status] || { variant: "outline", className: "text-gray-500", label: mission.status }
+
+  // FALLBACK SEGURO: Se o status não existir no mapa, usa cinza
+  const statusStyle = statusConfig[mission.status] || { 
+      variant: "outline", 
+      className: "bg-gray-500/10 text-gray-500 border-gray-200", 
+      label: mission.status 
+  }
 
   return (
     <>
@@ -49,12 +55,8 @@ export function MissionCard({ mission, onDelete, onEdit }: MissionCardProps) {
                 <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {/* Botão de Editar Conectado */}
                 <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
-                
                 <DropdownMenuItem onClick={() => setIsSimulationOpen(true)}>Ver Simulação</DropdownMenuItem>
-                
-                {/* Botão de Excluir Conectado */}
                 <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => onDelete(mission.id)}>
                     Excluir
                 </DropdownMenuItem>
@@ -80,7 +82,7 @@ export function MissionCard({ mission, onDelete, onEdit }: MissionCardProps) {
         <DialogContent className="max-w-4xl">
             <DialogHeader><DialogTitle>Simulação: {mission.name}</DialogTitle></DialogHeader>
             <div className="flex justify-center bg-black/5 rounded-lg p-4 h-64 items-center">
-                <p>Simulação Visual...</p>
+                <p className="text-muted-foreground">Visualização da simulação em Python...</p>
             </div>
         </DialogContent>
       </Dialog>

@@ -19,6 +19,9 @@ public class CriarMissaoRequest {
     private LocalDate dataInicio;
 
     private List<Long> tripulacaoIds;
+    private Long espaconaveId;
+    public Long getEspaconaveId() { return espaconaveId; }
+    public void setEspaconaveId(Long espaconaveId) { this.espaconaveId = espaconaveId; }
 
     public CriarMissaoRequest() {
     }

@@ -135,9 +135,6 @@ public class Missao {
         this.tripulacao.addAll(novosTripulantes);
     }
     
-    /**
-     * NOVO: Método auxiliar para adicionar um evento à missão.
-     */
     public void adicionarEvento(Evento evento) {
         this.eventos.add(evento);
         evento.setMissao(this);

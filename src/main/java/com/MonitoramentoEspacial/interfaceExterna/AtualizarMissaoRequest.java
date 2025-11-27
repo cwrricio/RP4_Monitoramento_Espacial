@@ -9,6 +9,9 @@ public class AtualizarMissaoRequest {
     private LocalDate dataInicio;
     private LocalDate dataFim;
     private List<Long> tripulacaoIds;
+    private Long espaconaveId;
+    public Long getEspaconaveId() { return espaconaveId; }
+    public void setEspaconaveId(Long espaconaveId) { this.espaconaveId = espaconaveId; }
 
     // Getters e Setters
     public String getNome() { return nome; }

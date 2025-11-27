@@ -9,9 +9,9 @@ import java.util.List;
 @Repository
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
-    /**
-     * Busca todos os eventos associados a um ID de missão específico,
-     * ordenados do mais recente para o mais antigo.
-     */
+    // Método antigo (pode manter se quiser, mas recomendamos usar o Top100)
     List<Evento> findByMissaoIdOrderByTimestampDesc(Long missaoId);
+
+    // NOVO: Limita a 100 resultados para performance
+    List<Evento> findTop100ByMissaoIdOrderByTimestampDesc(Long missaoId);
 }

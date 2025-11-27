@@ -18,13 +18,14 @@ public class MissaoDTO {
     private LocalDate dataFim;
 
     private StatusMissao status;
-
-    // CORREÇÃO: Lista de objetos para o Frontend ler os dados (biometria, nome, etc)
-    private List<AstronautaDTO> tripulacao; 
+    private List<AstronautaDTO> tripulacao;
+    
+    // CAMPO ADICIONADO
+    private EspaconaveDTO espaconave; 
 
     public MissaoDTO() {}
 
-    public MissaoDTO(Long id, String nome, String objetivo, LocalDate dataInicio, LocalDate dataFim, StatusMissao status, List<AstronautaDTO> tripulacao) {
+    public MissaoDTO(Long id, String nome, String objetivo, LocalDate dataInicio, LocalDate dataFim, StatusMissao status, List<AstronautaDTO> tripulacao, EspaconaveDTO espaconave) {
         this.id = id;
         this.nome = nome;
         this.objetivo = objetivo;
@@ -32,6 +33,7 @@ public class MissaoDTO {
         this.dataFim = dataFim;
         this.status = status;
         this.tripulacao = tripulacao;
+        this.espaconave = espaconave;
     }
 
     // Getters e Setters
@@ -49,4 +51,7 @@ public class MissaoDTO {
     public void setStatus(StatusMissao status) { this.status = status; }
     public List<AstronautaDTO> getTripulacao() { return tripulacao; }
     public void setTripulacao(List<AstronautaDTO> tripulacao) { this.tripulacao = tripulacao; }
+    
+    public EspaconaveDTO getEspaconave() { return espaconave; }
+    public void setEspaconave(EspaconaveDTO espaconave) { this.espaconave = espaconave; }
 }
