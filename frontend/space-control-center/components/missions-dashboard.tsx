@@ -7,13 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MissionCard } from "@/components/mission-card"
 import { NewMissionSheet } from "@/components/new-mission-sheet"
 import { MissionAPI, type MissaoDTO } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 export function MissionsDashboard() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [missions, setMissions] = useState<MissaoDTO[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [editingMission, setEditingMission] = useState<MissaoDTO | null>(null) // Estado para edição
+  const { toast } = useToast()
 
-  // Busca as missões no Backend
   const fetchMissions = async () => {
     try {
       setIsLoading(true)
@@ -26,18 +28,38 @@ export function MissionsDashboard() {
     }
   }
 
-  // Carrega ao iniciar
   useEffect(() => {
     fetchMissions()
   }, [])
 
-  // Filtra por status
+  // --- FUNÇÃO DE DELETAR (CORREÇÃO DO ERRO) ---
+  const handleDeleteMission = async (id: string) => {
+    try {
+      await MissionAPI.deletar(id)
+      toast({ title: "Missão removida", description: "A missão foi excluída com sucesso." })
+      // Atualiza a lista visualmente
+      setMissions((prev) => prev.filter((m) => m.id !== id))
+    } catch (error) {
+      toast({ title: "Erro", description: "Não foi possível remover a missão.", variant: "destructive" })
+    }
+  }
+
+  // --- FUNÇÃO DE EDITAR ---
+  const handleEditMission = (mission: MissaoDTO) => {
+    setEditingMission(mission) // Salva a missão no estado
+    setIsSheetOpen(true)       // Abre o modal
+  }
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open)
+    if (!open) setEditingMission(null) // Limpa a edição ao fechar
+  }
+
   const filterMissions = (status?: string) => {
     if (!status) return missions
     return missions.filter((m) => m.status === status)
   }
 
-  // Adapta o DTO do Java para o Card do Front
   const mapToCardProps = (m: MissaoDTO) => ({
     id: m.id,
     name: m.nome,
@@ -73,8 +95,14 @@ export function MissionsDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {missions.map((mission) => (
-                // @ts-ignore
-                <MissionCard key={mission.id} mission={mapToCardProps(mission)} />
+                <MissionCard 
+                    key={mission.id} 
+                    mission={mapToCardProps(mission)}
+                    // AQUI ESTAVA FALTANDO PASSAR A FUNÇÃO:
+                    onDelete={handleDeleteMission}
+                    // Passamos a missão original para edição, pois o mapToCardProps perde dados (tripulação)
+                    onEdit={() => handleEditMission(mission)} 
+                />
               ))}
             </div>
           )}
@@ -84,8 +112,12 @@ export function MissionsDashboard() {
           <TabsContent key={status} value={status} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filterMissions(status).map((mission) => (
-                // @ts-ignore
-                <MissionCard key={mission.id} mission={mapToCardProps(mission)} />
+                <MissionCard 
+                    key={mission.id} 
+                    mission={mapToCardProps(mission)} 
+                    onDelete={handleDeleteMission}
+                    onEdit={() => handleEditMission(mission)}
+                />
               ))}
             </div>
           </TabsContent>
@@ -94,8 +126,9 @@ export function MissionsDashboard() {
 
       <NewMissionSheet 
         open={isSheetOpen} 
-        onOpenChange={setIsSheetOpen}
-        onSuccess={fetchMissions} 
+        onOpenChange={handleSheetOpenChange}
+        onSuccess={fetchMissions}
+        mission={editingMission} // Passa a missão para edição
       />
     </div>
   )

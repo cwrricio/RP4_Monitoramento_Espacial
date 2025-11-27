@@ -12,41 +12,51 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
-import { MissionAPI, AstronautAPI, type CriarMissaoRequest, type AstronautDTO } from "@/lib/api"
+import { MissionAPI, AstronautAPI, type CriarMissaoRequest, type AstronautDTO, type MissaoDTO } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
 interface NewMissionSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  mission?: MissaoDTO | null 
 }
 
-export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionSheetProps) {
+export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewMissionSheetProps) {
   const [nome, setNome] = useState("")
   const [objetivo, setObjetivo] = useState("")
   const [dataInicio, setDataInicio] = useState<Date>()
   const [crewOpen, setCrewOpen] = useState(false)
-  
-  // O estado selecionado mantém strings (IDs do front), convertemos ao enviar
   const [selectedCrew, setSelectedCrew] = useState<string[]>([]) 
   const [astronauts, setAstronauts] = useState<AstronautDTO[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  // Carrega astronautas ao abrir o modal
   useEffect(() => {
     if (open) {
-      AstronautAPI.listar()
-        .then(setAstronauts)
-        .catch(() => {
-          toast({
-            title: "Erro",
-            description: "Falha ao carregar astronautas.",
-            variant: "destructive",
-          })
-        })
+      AstronautAPI.listar().then(setAstronauts).catch(() => console.error("Erro ao carregar astronautas"))
     }
-  }, [open, toast])
+  }, [open])
+
+  useEffect(() => {
+    if (mission && open) {
+        setNome(mission.nome)
+        setObjetivo(mission.objetivo)
+        if (mission.dataInicio) {
+            const [ano, mes, dia] = mission.dataInicio.split('-').map(Number);
+            setDataInicio(new Date(ano, mes - 1, dia)); 
+        }
+        if (mission.tripulacao) {
+            // Garante que os IDs sejam strings ao carregar
+            setSelectedCrew(mission.tripulacao.map(a => a.id.toString()))
+        }
+    } else if (!mission && open) {
+        setNome("")
+        setObjetivo("")
+        setDataInicio(undefined)
+        setSelectedCrew([])
+    }
+  }, [mission, open])
 
   const toggleCrew = (astronautId: string) => {
     setSelectedCrew((prev) =>
@@ -56,53 +66,34 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
 
   const handleSubmit = async () => {
     if (!nome || !objetivo || !dataInicio) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      })
+      toast({ title: "Erro", description: "Preencha todos os campos obrigatórios.", variant: "destructive" })
       return
     }
 
     setIsSubmitting(true)
     try {
-      // CORREÇÃO 1: Formatar data para YYYY-MM-DD
-      // O Java LocalDate falha se receber ISO string com hora (T00:00:00.000Z)
       const dataFormatada = format(dataInicio, "yyyy-MM-dd")
-
-      // CORREÇÃO 2: Converter IDs de string para number
-      // O DTO do Backend espera List<Long>, o front estava mandando string[]
       const tripulacaoNumerica = selectedCrew.map((id) => Number(id))
 
-      const data: CriarMissaoRequest = {
+      const payload = {
         nome,
         objetivo,
         dataInicio: dataFormatada,
         tripulacaoIds: tripulacaoNumerica,
       }
 
-      await MissionAPI.criar(data)
-
-      toast({
-        title: "Sucesso",
-        description: "Missão criada com sucesso!",
-      })
+      if (mission) {
+         await MissionAPI.atualizar(mission.id, payload)
+         toast({ title: "Sucesso", description: "Missão atualizada!" })
+      } else {
+         await MissionAPI.criar(payload as CriarMissaoRequest)
+         toast({ title: "Sucesso", description: "Missão criada!" })
+      }
 
       onOpenChange(false)
-      onSuccess?.() // Atualiza a lista no dashboard
-
-      // Reset do formulário
-      setNome("")
-      setObjetivo("")
-      setDataInicio(undefined)
-      setSelectedCrew([])
-    } catch (error) {
-      console.error(error)
-      toast({
-        title: "Erro",
-        description: "Falha ao criar missão. Verifique os dados.",
-        variant: "destructive",
-      })
+      onSuccess?.()
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Falha ao salvar missão.", variant: "destructive" })
     } finally {
       setIsSubmitting(false)
     }
@@ -112,36 +103,23 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-[540px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Criar Nova Missão</SheetTitle>
+          <SheetTitle>{mission ? "Editar Missão" : "Criar Nova Missão"}</SheetTitle>
           <SheetDescription>Preencha os detalhes da missão.</SheetDescription>
         </SheetHeader>
         <div className="grid gap-6 py-6">
           <div className="grid gap-2">
             <Label htmlFor="nome">Nome da Missão</Label>
-            <Input
-              id="nome"
-              placeholder="Ex: Missão Alpha Centauri"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-            />
+            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="objetivo">Objetivo</Label>
-            <Input
-              id="objetivo"
-              placeholder="Ex: Explorar Proxima Centauri b"
-              value={objetivo}
-              onChange={(e) => setObjetivo(e.target.value)}
-            />
+            <Input id="objetivo" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label>Data de Início</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("justify-start text-left font-normal", !dataInicio && "text-muted-foreground")}
-                >
+                <Button variant="outline" className={cn("justify-start text-left font-normal", !dataInicio && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dataInicio ? format(dataInicio, "PPP", { locale: ptBR }) : "Selecione uma data"}
                 </Button>
@@ -155,15 +133,8 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
             <Label>Tripulação</Label>
             <Popover open={crewOpen} onOpenChange={setCrewOpen}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={crewOpen}
-                  className="justify-between bg-transparent"
-                >
-                  {selectedCrew.length > 0
-                    ? `${selectedCrew.length} astronauta(s) selecionado(s)`
-                    : "Selecione a tripulação"}
+                <Button variant="outline" role="combobox" aria-expanded={crewOpen} className="justify-between bg-transparent">
+                  {selectedCrew.length > 0 ? `${selectedCrew.length} selecionado(s)` : "Selecione a tripulação"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -174,13 +145,9 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
                     <CommandEmpty>Nenhum astronauta encontrado.</CommandEmpty>
                     <CommandGroup>
                       {astronauts.map((astronaut) => (
-                        <CommandItem key={astronaut.id} onSelect={() => toggleCrew(astronaut.id)}>
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedCrew.includes(astronaut.id) ? "opacity-100" : "opacity-0",
-                            )}
-                          />
+                        // CORREÇÃO 3: Forçamos .toString() para garantir que comparamos String com String
+                        <CommandItem key={astronaut.id} onSelect={() => toggleCrew(astronaut.id.toString())}>
+                          <Check className={cn("mr-2 h-4 w-4", selectedCrew.includes(astronaut.id.toString()) ? "opacity-100" : "opacity-0")} />
                           {astronaut.nome}
                         </CommandItem>
                       ))}
@@ -192,12 +159,8 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess }: NewMissionShe
           </div>
         </div>
         <SheetFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Salvando..." : "Salvar Missão"}
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Salvando..." : "Salvar"}</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>

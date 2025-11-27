@@ -18,32 +18,23 @@ export function AstronautsManagement() {
   const { toast } = useToast()
 
   const handleEdit = (astronaut: AstronautDTO) => {
-    setEditingAstronaut(astronaut)
-    setIsDialogOpen(true)
-    toast({ title: "Edição", description: "Função de edição a ser implementada." })
+    setEditingAstronaut(astronaut) // Define quem está sendo editado
+    setIsDialogOpen(true)          // Abre o modal
   }
 
   const handleDelete = async (id: string) => {
-    
     try {
       await AstronautAPI.deletar(id)
       mutate() 
-      toast({
-        title: "Astronauta removido",
-        description: "O astronauta foi removido com sucesso.",
-      })
+      toast({ title: "Astronauta removido", description: "O astronauta foi removido com sucesso." })
     } catch (error) {
-      toast({
-        title: "Erro ao remover",
-        description: "Não foi possível remover o astronauta.",
-        variant: "destructive",
-      })
+      toast({ title: "Erro ao remover", description: "Não foi possível remover o astronauta.", variant: "destructive" })
     }
   }
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false)
-    setEditingAstronaut(null)
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open)
+    if (!open) setEditingAstronaut(null) // Limpa o estado ao fechar
   }
 
   if (isLoading) {
@@ -56,7 +47,6 @@ export function AstronautsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Astronautas</h1>
         <Button onClick={() => setIsDialogOpen(true)}>
@@ -65,7 +55,6 @@ export function AstronautsManagement() {
         </Button>
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
@@ -85,30 +74,18 @@ export function AstronautsManagement() {
                   <TableCell>{astronaut.nivelAptidaoMedica}</TableCell> 
                   <TableCell>{astronaut.missoesRealizadas}</TableCell> 
                   <TableCell>
-                    <Badge
-                      variant={astronaut.ativo ? "default" : "secondary"}
-                      className={
-                        astronaut.ativo
-                          ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
-                          : "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20"
-                      }
-                    >
+                    <Badge variant={astronaut.ativo ? "default" : "secondary"}>
                       {astronaut.ativo ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEdit(astronaut)}>Editar Perfil</DropdownMenuItem>
-                        <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(astronaut.id)}>
-                          Remover
-                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(astronaut.id)}>Remover</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -116,21 +93,19 @@ export function AstronautsManagement() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  Nenhum astronauta cadastrado
-                </TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum astronauta cadastrado</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
       
+      {/* CORREÇÃO AQUI: PASSAR O ASTRONAUTA PARA O DIALOG */}
       <AddAstronautDialog
         open={isDialogOpen}
         onOpenChange={handleDialogClose}
         onSuccess={mutate}
-        // A lógica de edição pode ser adicionada aqui
-        // astronaut={editingAstronaut} 
+        astronaut={editingAstronaut} 
       />
     </div>
   )

@@ -15,7 +15,7 @@ interface AddAstronautDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
-  astronaut?: AstronautDTO | null // <--- PROP FALTANTE ADICIONADA
+  astronaut?: AstronautDTO | null
 }
 
 export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }: AddAstronautDialogProps) {
@@ -27,7 +27,6 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  // POPULAR FORMULÁRIO SE FOR EDIÇÃO
   useEffect(() => {
     if (astronaut) {
       setNome(astronaut.nome)
@@ -51,9 +50,19 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
     const parsedIdade = Number.parseInt(idade, 10)
     const parsedMissoes = Number.parseInt(missoesRealizadas, 10)
 
+    // CORREÇÃO 1: Validação de idade mínima e máxima
     if (!nome || isNaN(parsedIdade) || isNaN(parsedMissoes)) {
       toast({ title: "Erro", description: "Campos inválidos.", variant: "destructive" })
       setIsSubmitting(false); return
+    }
+
+    if (parsedIdade < 18 || parsedIdade > 100) {
+        toast({ 
+            title: "Idade Inválida", 
+            description: "A idade do astronauta deve ser entre 18 e 100 anos.", 
+            variant: "destructive" 
+        })
+        setIsSubmitting(false); return
     }
 
     try {
@@ -65,7 +74,6 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
         missoesRealizadas: parsedMissoes,
       }
 
-      // LÓGICA DE DECISÃO (UPDATE vs CREATE)
       if (astronaut) {
         await AstronautAPI.atualizar(astronaut.id, data)
         toast({ title: "Sucesso", description: "Astronauta atualizado!" })
@@ -94,11 +102,20 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
           <div className="grid gap-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="idade">Idade</Label>
-            <Input id="idade" type="number" value={idade} onChange={(e) => setIdade(e.target.value)} />
+            {/* CORREÇÃO 2: Limites visuais no input */}
+            <Input 
+                id="idade" 
+                type="number" 
+                min="18" 
+                max="100" 
+                value={idade} 
+                onChange={(e) => setIdade(e.target.value)} 
+                required 
+            />
           </div>
           <div className="grid gap-2">
             <Label>Aptidão</Label>
@@ -113,7 +130,7 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
           </div>
           <div className="grid gap-2">
             <Label htmlFor="missoes">Missões Realizadas</Label>
-            <Input id="missoes" type="number" value={missoesRealizadas} onChange={(e) => setMissoesRealizadas(e.target.value)} />
+            <Input id="missoes" type="number" min="0" value={missoesRealizadas} onChange={(e) => setMissoesRealizadas(e.target.value)} />
           </div>
           <div className="grid gap-3">
              <RadioGroup value={ativo} onValueChange={setAtivo} className="flex gap-4">
