@@ -56,9 +56,6 @@ public class AstronautaController {
         return ResponseEntity.ok(astronautaService.atualizarAstronauta(id, request));
     }
 
-    // ===================================================================
-    // NOVO ENDPOINT ADICIONADO
-    // ===================================================================
     /**
      * Deleta um astronauta com base no ID.
      * @param id O ID do astronauta a ser deletado.

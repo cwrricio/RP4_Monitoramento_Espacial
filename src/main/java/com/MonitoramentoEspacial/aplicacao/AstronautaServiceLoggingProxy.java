@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 /**
  * Implementação do Padrão de Projeto Proxy.
@@ -73,9 +72,6 @@ public class AstronautaServiceLoggingProxy implements AstronautaServiceInterface
         }
     }
 
-    // ===================================================================
-    // NOVO MÉTODO ADICIONADO
-    // ===================================================================
     /**
      * Intercepta a chamada de deleção para adicionar logging.
      */

@@ -1,9 +1,9 @@
 package com.MonitoramentoEspacial.aplicacao.dominio;
 
 public enum TipoAmeaca {
-    DETRITOS_ESPACIAIS,
+    METEORO,
     TEMPESTADE_SOLAR,
-    ASTEROIDE,
-    RADIACAO_COSMICA,
-    FALHA_COMUNICACAO
+    FALHA_SISTEMA,
+    DETRITOS_ESPACIAIS,
+    OUTRO
 }

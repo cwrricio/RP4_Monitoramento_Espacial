@@ -12,9 +12,6 @@ public class EspaconaveDTO {
     private Long id;
     private String nome;
     
-    // ===============================================
-    // CORREÇÃO: O nome do campo foi alterado
-    // ===============================================
     private int capacidade; 
     
     private String statusOperacional;
@@ -47,7 +44,6 @@ public class EspaconaveDTO {
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
-    // =V Getter e Setter para o campo corrigido V=
     public int getCapacidade() { return capacidade; }
     public void setCapacidade(int capacidade) { this.capacidade = capacidade; }
 

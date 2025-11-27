@@ -22,13 +22,17 @@ interface MissionControlPanelProps {
 }
 
 export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
+  // Hooks customizados para buscar dados (SWR ou React Query)
   const { mission, isLoading: missionLoading, mutate: mutateMission } = useMission(missionId)
   const { events, mutate: mutateEvents } = useEvents(missionId)
   const { protocols, mutate: mutateProtocols } = useProtocols(missionId)
+  
   const [isActivating, setIsActivating] = useState<string | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+
+  // --- AÇÕES ---
 
   const handleActivateProtocol = async (tipo: "MEDICO" | "TECNICO" | "EVACUACAO", descricao: string) => {
     setIsActivating(tipo)
@@ -39,7 +43,7 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
         description: `Protocolo ${tipo} ativado com sucesso!`,
       })
       mutateProtocols()
-      mutateEvents() // Protocols might generate events
+      mutateEvents() // Protocolos geram eventos, então atualizamos a lista
     } catch (error) {
       toast({
         title: "Erro",
@@ -60,7 +64,8 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
         description: "A missão foi encerrada com sucesso!",
       })
       mutateMission()
-      router.push("/")
+      // Opcional: Redirecionar para dashboard ou ficar na tela para ver o status "Concluída"
+      // router.push("/") 
     } catch (error) {
       toast({
         title: "Erro",
@@ -72,46 +77,37 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
     }
   }
 
+  // --- AUXILIARES DE UI ---
+
   const getEventIcon = (tipo: string) => {
     switch (tipo) {
-      case "INFO":
-        return <Info className="h-4 w-4" />
-      case "ALERTA":
-        return <AlertTriangle className="h-4 w-4" />
-      case "ERRO_CRITICO":
-        return <XCircle className="h-4 w-4" />
-      default:
-        return <Info className="h-4 w-4" />
+      case "INFO": return <Info className="h-4 w-4" />
+      case "ALERTA": return <AlertTriangle className="h-4 w-4" />
+      case "ERRO_CRITICO": return <XCircle className="h-4 w-4" />
+      default: return <Info className="h-4 w-4" />
     }
   }
 
   const getEventBadgeVariant = (tipo: string): "default" | "secondary" | "destructive" => {
     switch (tipo) {
-      case "INFO":
-        return "default"
-      case "ALERTA":
-        return "secondary"
-      case "ERRO_CRITICO":
-        return "destructive"
-      default:
-        return "default"
+      case "INFO": return "default"
+      case "ALERTA": return "secondary"
+      case "ERRO_CRITICO": return "destructive"
+      default: return "default"
     }
   }
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" => {
     switch (status) {
-      case "EM_ANDAMENTO":
-        return "default"
-      case "PLANEJADA":
-        return "secondary"
-      case "CONCLUIDA":
-        return "default"
-      case "FALHOU":
-        return "destructive"
-      default:
-        return "default"
+      case "EM_ANDAMENTO": return "default"
+      case "PLANEJADA": return "secondary"
+      case "CONCLUIDA": return "default"
+      case "FALHOU": return "destructive"
+      default: return "default"
     }
   }
+
+  // --- RENDERIZAÇÃO ---
 
   if (missionLoading) {
     return (
@@ -155,84 +151,101 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Crew Panel with Biometric Data */}
+        {/* =================================================================================
+            CORREÇÃO PRINCIPAL: TRIPULAÇÃO E BIOMETRIA
+            Agora itera sobre objetos AstronautaDTO completos, não IDs.
+           ================================================================================= */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               Tripulação e Biometria
             </CardTitle>
-            <CardDescription>Dados biométricos em tempo real dos astronautas</CardDescription>
+            <CardDescription>Dados biométricos em tempo real</CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {mission.tripulacao.map((astronaut) => (
-                  <div key={astronaut.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{astronaut.nome}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Missões Realizadas: {astronaut.missoesRealizadas}
-                        </p>
-                      </div>
-                      <Badge variant={astronaut.ativo ? "default" : "secondary"}>
-                        {astronaut.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </div>
-
-                    {astronaut.tipoBiometria && (
-                      <>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Activity className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">{astronaut.tipoBiometria}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold">{astronaut.valorBiometria}</span>
-                            <span className="text-sm text-muted-foreground">{astronaut.unidadeBiometria}</span>
-                          </div>
-                        </div>
-                        {astronaut.registradoEm && (
-                          <p className="text-xs text-muted-foreground">
-                            Atualizado:{" "}
-                            {formatDistanceToNow(new Date(astronaut.registradoEm), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
+                {/* Verifica se a lista existe antes de mapear */}
+                {mission.tripulacao && mission.tripulacao.length > 0 ? (
+                  mission.tripulacao.map((astronauta) => (
+                    <div key={astronauta.id} className="border rounded-lg p-4 space-y-3">
+                      
+                      {/* Cabeçalho do Card do Astronauta */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">{astronauta.nome}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Missões: {astronauta.missoesRealizadas}
                           </p>
-                        )}
-                      </>
-                    )}
+                        </div>
+                        <Badge variant={astronauta.ativo ? "default" : "secondary"}>
+                          {astronauta.ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Aptidão Médica:</span>
-                      <Badge
-                        variant={
-                          astronaut.nivelAptidaoMedica === "ALTO"
-                            ? "default"
-                            : astronaut.nivelAptidaoMedica === "MEDIO"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                        className="text-xs"
-                      >
-                        {astronaut.nivelAptidaoMedica}
-                      </Badge>
+                      {/* Seção de Biometria (Renderiza apenas se houver dados) */}
+                      {astronauta.tipoBiometria ? (
+                        <>
+                          <Separator />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Activity className="h-4 w-4 text-primary" />
+                              <span className="text-sm font-medium">{astronauta.tipoBiometria}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold">{astronauta.valorBiometria}</span>
+                              <span className="text-sm text-muted-foreground">{astronauta.unidadeBiometria}</span>
+                            </div>
+                          </div>
+                          {astronauta.registradoEm && (
+                            <p className="text-xs text-muted-foreground">
+                              Atualizado:{" "}
+                              {formatDistanceToNow(new Date(astronauta.registradoEm), {
+                                addSuffix: true,
+                                locale: ptBR,
+                              })}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        // Fallback elegante se não tiver biometria ainda
+                        <div className="bg-muted/30 p-2 rounded text-center">
+                            <p className="text-xs text-muted-foreground italic">
+                                Aguardando sincronização biométrica...
+                            </p>
+                        </div>
+                      )}
+
+                      {/* Rodapé do Card do Astronauta */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-muted-foreground">Aptidão:</span>
+                        <Badge
+                          variant={
+                            astronauta.nivelAptidaoMedica === "ALTO" ? "default" :
+                            astronauta.nivelAptidaoMedica === "MEDIO" ? "secondary" : "destructive"
+                          }
+                          className="text-xs"
+                        >
+                          {astronauta.nivelAptidaoMedica}
+                        </Badge>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10">
+                    <Users className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-muted-foreground">Nenhum astronauta na tripulação.</p>
                   </div>
-                ))}
-
-                {mission.tripulacao.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">Nenhum astronauta atribuído a esta missão.</p>
                 )}
               </div>
             </ScrollArea>
           </CardContent>
         </Card>
 
-        {/* Event Log */}
+        {/* =================================================================================
+            LOG DE EVENTOS
+           ================================================================================= */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -244,33 +257,33 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-3">
-                {events.map((event) => (
-                  <div key={event.id} className="border rounded-lg p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5">{getEventIcon(event.tipo)}</div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Badge variant={getEventBadgeVariant(event.tipo)} className="text-xs">
-                            {event.tipo}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(event.timestamp), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
-                          </span>
+                {events && events.length > 0 ? (
+                    events.map((event) => (
+                    <div key={event.id} className="border rounded-lg p-3">
+                        <div className="flex items-start gap-3">
+                        <div className="mt-0.5">{getEventIcon(event.tipo)}</div>
+                        <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                            <Badge variant={getEventBadgeVariant(event.tipo)} className="text-xs">
+                                {event.tipo}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(event.timestamp), {
+                                addSuffix: true,
+                                locale: ptBR,
+                                })}
+                            </span>
+                            </div>
+                            <p className="text-sm">{event.descricao}</p>
                         </div>
-                        <p className="text-sm">{event.descricao}</p>
-                      </div>
+                        </div>
                     </div>
-                  </div>
-                ))}
-
-                {events.length === 0 && (
-                  <div className="text-center py-8">
-                    <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Nenhum evento registrado</p>
-                  </div>
+                    ))
+                ) : (
+                    <div className="text-center py-8">
+                    <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-muted-foreground">Nenhum evento registrado até o momento.</p>
+                    </div>
                 )}
               </div>
             </ScrollArea>
@@ -278,22 +291,24 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
         </Card>
       </div>
 
-      {/* Emergency Protocols */}
+      {/* =================================================================================
+            PROTOCOLOS DE EMERGÊNCIA
+           ================================================================================= */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Protocolos de Emergência
           </CardTitle>
-          <CardDescription>Acione protocolos de emergência quando necessário</CardDescription>
+          <CardDescription>Acione protocolos manuais em caso de falha sistêmica</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Protocol Activation Buttons */}
+          {/* Botões Grandes de Ação */}
           <div className="grid gap-3 md:grid-cols-3">
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 bg-transparent"
-              onClick={() => handleActivateProtocol("MEDICO", "Protocolo médico de emergência acionado")}
+              className="h-auto py-4 flex-col gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+              onClick={() => handleActivateProtocol("MEDICO", "Protocolo médico de emergência acionado manualmente")}
               disabled={isActivating !== null}
             >
               <Stethoscope className="h-6 w-6" />
@@ -301,8 +316,8 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 bg-transparent"
-              onClick={() => handleActivateProtocol("TECNICO", "Protocolo técnico de emergência acionado")}
+              className="h-auto py-4 flex-col gap-2 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200"
+              onClick={() => handleActivateProtocol("TECNICO", "Protocolo técnico de suporte acionado")}
               disabled={isActivating !== null}
             >
               <Wrench className="h-6 w-6" />
@@ -310,39 +325,41 @@ export function MissionControlPanel({ missionId }: MissionControlPanelProps) {
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
-              onClick={() => handleActivateProtocol("EVACUACAO", "Protocolo de evacuação acionado")}
+              className="h-auto py-4 flex-col gap-2 border-destructive text-destructive hover:bg-destructive hover:text-white"
+              onClick={() => handleActivateProtocol("EVACUACAO", "ALERTA: Protocolo de evacuação total da nave iniciado!")}
               disabled={isActivating !== null}
             >
               <AlertTriangle className="h-6 w-6" />
-              <span>Evacuação</span>
+              <span>Evacuação Total</span>
             </Button>
           </div>
 
-          {/* Activated Protocols Log */}
+          {/* Histórico de Protocolos */}
           <div>
-            <h4 className="font-semibold mb-3">Protocolos Acionados</h4>
-            <ScrollArea className="h-[200px]">
+            <h4 className="font-semibold mb-3">Histórico de Protocolos Acionados</h4>
+            <ScrollArea className="h-[150px]">
               <div className="space-y-2">
-                {protocols.map((protocol) => (
-                  <div key={protocol.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <Badge variant={protocol.tipo === "EVACUACAO" ? "destructive" : "secondary"} className="text-xs">
-                        {protocol.tipo}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(protocol.acionadoEm), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
-                      </span>
+                {protocols && protocols.length > 0 ? (
+                    protocols.map((protocol) => (
+                    <div key={protocol.id} className="border rounded-lg p-3 bg-muted/20">
+                        <div className="flex items-center justify-between mb-1">
+                        <Badge variant={protocol.tipo === "EVACUACAO" ? "destructive" : "secondary"} className="text-xs">
+                            {protocol.tipo}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(protocol.acionadoEm), {
+                            addSuffix: true,
+                            locale: ptBR,
+                            })}
+                        </span>
+                        </div>
+                        <p className="text-sm font-medium">{protocol.descricao}</p>
                     </div>
-                    <p className="text-sm">{protocol.descricao}</p>
-                  </div>
-                ))}
-
-                {protocols.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4 text-sm">Nenhum protocolo acionado ainda</p>
+                    ))
+                ) : (
+                    <p className="text-center text-muted-foreground py-4 text-sm bg-muted/10 rounded border border-dashed">
+                        Nenhum protocolo acionado nesta missão.
+                    </p>
                 )}
               </div>
             </ScrollArea>

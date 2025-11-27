@@ -6,14 +6,9 @@ import com.MonitoramentoEspacial.interfaceExterna.CriarAstronautaRequest; // <- 
 
 import java.util.List;
 
-/**
- * Interface (Contrato) que define as operações de negócio para a entidade Astronauta.
- * ...
- */
 public interface AstronautaServiceInterface {
 
     /**
-     * NOVO MÉTODO
      * Cria um novo astronauta no sistema.
      * @param request Dados do astronauta a ser criado.
      * @return O AstronautaDTO do astronauta recém-criado.
@@ -26,9 +21,7 @@ public interface AstronautaServiceInterface {
 
     AstronautaDTO atualizarAstronauta(Long id, AtualizaAstronautaRequest request);
     
-    // ===================================================================
-    // NOVO MÉTODO ADICIONADO
-    // ===================================================================
+
     /**
      * Deleta um astronauta com base no ID.
      * @param id O ID do astronauta a ser deletado.

@@ -4,16 +4,9 @@ import com.MonitoramentoEspacial.aplicacao.dominio.Astronauta;
 import com.MonitoramentoEspacial.aplicacao.dominio.Missao;
 import com.MonitoramentoEspacial.aplicacao.dominio.ProtocoloEmergencial;
 import com.MonitoramentoEspacial.aplicacao.dominio.StatusMissao;
-import com.MonitoramentoEspacial.interfaceExterna.AcionarProtocoloRequest;
-import com.MonitoramentoEspacial.interfaceExterna.CriarMissaoRequest;
-import com.MonitoramentoEspacial.interfaceExterna.EventoDTO;
-import com.MonitoramentoEspacial.interfaceExterna.MissaoDTO;
-import com.MonitoramentoEspacial.interfaceExterna.ProtocoloEmergencialDTO;
-import com.MonitoramentoEspacial.middleware.AstronautaRepository;
-import com.MonitoramentoEspacial.middleware.EventoRepository;
-import com.MonitoramentoEspacial.middleware.MissaoRepository;
-import com.MonitoramentoEspacial.middleware.ProtocoloEmergencialRepository;
-import com.MonitoramentoEspacial.aplicacao.dominio.Evento;
+import com.MonitoramentoEspacial.aplicacao.dominio.Evento; // Importe Evento!
+import com.MonitoramentoEspacial.interfaceExterna.*;
+import com.MonitoramentoEspacial.middleware.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,25 +20,15 @@ public class MissaoService implements MissaoServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(MissaoService.class);
 
-    // --- Repositórios ---
     private final MissaoRepository missaoRepository;
     private final AstronautaRepository astronautaRepository;
     private final EventoRepository eventoRepository;
     private final ProtocoloEmergencialRepository protocoloRepository;
-
-    // --- Mappers ---
     private final MissaoMapper missaoMapper;
     private final EventoMapper eventoMapper;
     private final ProtocoloEmergencialMapper protocoloMapper;
 
-    // Construtor sem @Autowired (opcional em versões novas do Spring, mas funciona com ou sem)
-    public MissaoService(MissaoRepository missaoRepository, 
-                         AstronautaRepository astronautaRepository, 
-                         EventoRepository eventoRepository, 
-                         ProtocoloEmergencialRepository protocoloRepository, 
-                         MissaoMapper missaoMapper, 
-                         EventoMapper eventoMapper, 
-                         ProtocoloEmergencialMapper protocoloMapper) {
+    public MissaoService(MissaoRepository missaoRepository, AstronautaRepository astronautaRepository, EventoRepository eventoRepository, ProtocoloEmergencialRepository protocoloRepository, MissaoMapper missaoMapper, EventoMapper eventoMapper, ProtocoloEmergencialMapper protocoloMapper) {
         this.missaoRepository = missaoRepository;
         this.astronautaRepository = astronautaRepository;
         this.eventoRepository = eventoRepository;
@@ -55,9 +38,6 @@ public class MissaoService implements MissaoServiceInterface {
         this.protocoloMapper = protocoloMapper;
     }
 
-    /**
-     * Método auxiliar privado para buscar uma missão ou lançar 404
-     */
     private Missao getMissaoById(Long missaoId) {
         return missaoRepository.findById(missaoId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Missão não encontrada com ID: " + missaoId));
@@ -66,124 +46,96 @@ public class MissaoService implements MissaoServiceInterface {
     @Override
     @Transactional
     public MissaoDTO criarMissao(CriarMissaoRequest request) {
-        log.info("Iniciando processo de criação de missão: {}", request.getNome());
         Missao missao = missaoMapper.toEntity(request);
         missao.setStatus(StatusMissao.PLANEJADA);
-
         if (request.getTripulacaoIds() != null && !request.getTripulacaoIds().isEmpty()) {
             List<Astronauta> tripulacao = astronautaRepository.findAllById(request.getTripulacaoIds());
-            // Validação extra: garantir que achou todos os IDs solicitados
             if (tripulacao.size() != request.getTripulacaoIds().size()) {
-                log.warn("Tentativa de criar missão com astronautas inexistentes.");
                 throw new RecursoNaoEncontradoException("Um ou mais astronautas não encontrados.");
             }
             missao.associarTripulacao(tripulacao);
         }
-
         Missao missaoSalva = missaoRepository.save(missao);
-        log.info("Missão '{}' criada com sucesso com ID: {}", missaoSalva.getNome(), missaoSalva.getId());
         return missaoMapper.toDTO(missaoSalva);
+    }
+
+    // --- NOVO MÉTODO PARA CORRIGIR ERRO DE ATUALIZAÇÃO ---
+    @Override
+    @Transactional
+    public MissaoDTO atualizarMissao(Long id, AtualizarMissaoRequest request) {
+        Missao missao = getMissaoById(id);
+        
+        if (request.getNome() != null) missao.setNome(request.getNome());
+        if (request.getObjetivo() != null) missao.setObjetivo(request.getObjetivo());
+        if (request.getDataInicio() != null) missao.setDataInicio(request.getDataInicio());
+        if (request.getDataFim() != null) missao.setDataFim(request.getDataFim());
+
+        if (request.getTripulacaoIds() != null) {
+            List<Astronauta> novaTripulacao = astronautaRepository.findAllById(request.getTripulacaoIds());
+            missao.associarTripulacao(novaTripulacao);
+        }
+
+        Missao salva = missaoRepository.save(missao);
+        return missaoMapper.toDTO(salva);
     }
 
     @Override
     @Transactional(readOnly = true)
     public MissaoDTO buscarPorId(Long id) {
-        Missao missao = getMissaoById(id);
-        return missaoMapper.toDTO(missao);
+        return missaoMapper.toDTO(getMissaoById(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MissaoDTO> listarTodas() {
-        return missaoRepository.findAll().stream()
-                .map(missaoMapper::toDTO)
-                .collect(Collectors.toList());
+        return missaoRepository.findAll().stream().map(missaoMapper::toDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void deletarMissao(Long id) {
-        log.info("Tentando deletar missão ID: {}", id);
         if (!missaoRepository.existsById(id)) {
             throw new RecursoNaoEncontradoException("Missão não encontrada para exclusão (ID: " + id + ")");
         }
         missaoRepository.deleteById(id);
-        log.info("Missão ID: {} deletada com sucesso", id);
     }
 
     @Override
     @Transactional
     public MissaoDTO iniciarSimulacao(Long id) {
-        log.info("Iniciando simulação para missão ID: {}", id);
         Missao missao = getMissaoById(id);
-        
-        missao.iniciarSimulacao(); 
-        
-        Missao missaoSalva = missaoRepository.save(missao); 
-        log.info("Simulação iniciada. Status da missão: {}", missaoSalva.getStatus());
-        return missaoMapper.toDTO(missaoSalva);
+        missao.iniciarSimulacao();
+        return missaoMapper.toDTO(missaoRepository.save(missao));
     }
-
-    // --- IMPLEMENTAÇÃO DOS NOVOS MÉTODOS ---
 
     @Override
     @Transactional(readOnly = true)
     public List<EventoDTO> listarEventosPorMissao(Long missaoId) {
-        log.debug("Listando eventos para missão ID: {}", missaoId);
-        if (!missaoRepository.existsById(missaoId)) {
-            throw new RecursoNaoEncontradoException("Missão não encontrada com ID: " + missaoId);
-        }
-        List<Evento> eventos = eventoRepository.findByMissaoIdOrderByTimestampDesc(missaoId);
-        return eventos.stream()
-                .map(eventoMapper::toDTO)
-                .collect(Collectors.toList());
+        if (!missaoRepository.existsById(missaoId)) throw new RecursoNaoEncontradoException("Missão não encontrada: " + missaoId);
+        return eventoRepository.findByMissaoIdOrderByTimestampDesc(missaoId).stream().map(eventoMapper::toDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProtocoloEmergencialDTO> listarProtocolosPorMissao(Long missaoId) {
-        log.debug("Listando protocolos para missão ID: {}", missaoId);
-        if (!missaoRepository.existsById(missaoId)) {
-            throw new RecursoNaoEncontradoException("Missão não encontrada com ID: " + missaoId);
-        }
-        List<ProtocoloEmergencial> protocolos = protocoloRepository.findByMissaoIdOrderByAcionadoEmDesc(missaoId);
-        return protocolos.stream()
-                .map(protocoloMapper::toDTO)
-                .collect(Collectors.toList());
+        if (!missaoRepository.existsById(missaoId)) throw new RecursoNaoEncontradoException("Missão não encontrada: " + missaoId);
+        return protocoloRepository.findByMissaoIdOrderByAcionadoEmDesc(missaoId).stream().map(protocoloMapper::toDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public ProtocoloEmergencialDTO acionarProtocolo(Long missaoId, AcionarProtocoloRequest request) {
-        log.warn("Acionando protocolo {} para missão ID: {}", request.tipo(), missaoId);
         Missao missao = getMissaoById(missaoId);
-
-        // A entidade Missao cria o Protocolo e o Evento
         ProtocoloEmergencial protocolo = missao.acionarProtocolo(request.tipo(), request.descricao());
-
-        // Salvamos a Missao, e o CascadeType.ALL salvará o novo Protocolo e Evento
         missaoRepository.save(missao);
-        
-        log.info("Protocolo ID {} acionado para missão ID: {}", protocolo.getId(), missaoId);
-        
-        // Retornamos o DTO do protocolo que foi criado
-        // (O save(missao) atualiza o ID do protocolo por referência)
         return protocoloMapper.toDTO(protocolo);
     }
 
     @Override
     @Transactional
     public MissaoDTO concluirMissao(Long missaoId) {
-        log.info("Concluindo missão ID: {}", missaoId);
         Missao missao = getMissaoById(missaoId);
-
-        // Lógica de domínio é executada na entidade
         missao.concluirMissao();
-
-        // O save(missao) atualiza o status, dataFim e salva o novo Evento
-        Missao missaoSalva = missaoRepository.save(missao);
-        
-        log.info("Missão ID: {} concluída com status {}", missaoId, missaoSalva.getStatus());
-        return missaoMapper.toDTO(missaoSalva);
+        return missaoMapper.toDTO(missaoRepository.save(missao));
     }
 }

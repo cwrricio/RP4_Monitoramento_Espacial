@@ -4,9 +4,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Request DTO para Criar ou Atualizar uma Espaconave.
- */
 public class SalvarEspaconaveRequest {
 
     @NotBlank(message = "Nome não pode ser vazio")
@@ -19,7 +16,6 @@ public class SalvarEspaconaveRequest {
     @NotBlank(message = "Status operacional não pode ser vazio")
     private String statusOperacional;
 
-    
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
     public Integer getCapacidade() { return capacidade; }

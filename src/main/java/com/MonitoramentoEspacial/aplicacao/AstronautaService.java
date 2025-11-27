@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-
-// IMPORT FALTANDO (Para o RecursoNaoEncontradoException)
 import com.MonitoramentoEspacial.aplicacao.RecursoNaoEncontradoException; 
 
 /**
@@ -22,7 +20,7 @@ import com.MonitoramentoEspacial.aplicacao.RecursoNaoEncontradoException;
  * É anotado com "realAstronautaService" para ser injetado no Proxy de Logging.
  */
 @Service("realAstronautaService")
-@SuppressWarnings("null") // <-- ADICIONADO: Para corrigir os 5 avisos de "Null type safety"
+@SuppressWarnings("null") //
 public class AstronautaService implements AstronautaServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(AstronautaService.class);
@@ -37,7 +35,6 @@ public class AstronautaService implements AstronautaServiceInterface {
      * as dependências são 'final' e o objeto é imutável, além de
      * facilitar testes unitários.
      */
-    // @Autowired // <-- REMOVIDO: Este era o aviso "Unnecessary @Autowired"
     public AstronautaService(AstronautaRepository repository, AstronautaMapper astronautaMapper) {
         this.repository = repository;
         this.astronautaMapper = astronautaMapper;

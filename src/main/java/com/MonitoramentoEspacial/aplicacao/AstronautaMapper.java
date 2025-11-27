@@ -38,7 +38,6 @@ public interface AstronautaMapper {
             return null;
         }
 
-        // Lógica de negócio original para buscar o dado biométrico mais recente
         String tipo = null;
         String valor = null;
         String unidade = null;

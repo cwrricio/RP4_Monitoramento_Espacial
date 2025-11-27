@@ -6,7 +6,6 @@ import com.MonitoramentoEspacial.interfaceExterna.SalvarEspaconaveRequest;
 import com.MonitoramentoEspacial.middleware.EspaconaveRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ public class EspaconaveService implements EspaconaveServiceInterface {
     private final EspaconaveRepository repository;
     private final EspaconaveMapper espaconaveMapper; // Injetado
 
-    // @Autowired // <-- REMOVIDO (Este era o aviso "Unnecessary @Autowired")
     public EspaconaveService(EspaconaveRepository repository, EspaconaveMapper espaconaveMapper) {
         this.repository = repository;
         this.espaconaveMapper = espaconaveMapper;
@@ -32,7 +30,6 @@ public class EspaconaveService implements EspaconaveServiceInterface {
     @Transactional
     public EspaconaveDTO criarEspaconave(SalvarEspaconaveRequest request) {
         log.info("Criando nova espaçonave: {}", request.getNome());
-        // MODIFICADO: Usa o mapper
         Espaconave espaconave = espaconaveMapper.toEntity(request);
         Espaconave salva = repository.save(espaconave);
         return espaconaveMapper.toDTO(salva);
