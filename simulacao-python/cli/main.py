@@ -56,7 +56,6 @@ except ImportError as e:
         def on_emergency_detected(self, emergency_type, simulation_data):
             print(f"PROTOCOLO ATIVADO: {emergency_type}")
 
-
 # Importar utilitários de animação
 try:
     from utils.animation import AnimationUtils
@@ -65,8 +64,6 @@ try:
 except ImportError as e:
     print(f"Aviso: AnimationUtils não disponível: {e}")
     ANIMATION_UTILS_AVAILABLE = False
-
-
 
 
 class CLIObserver:
@@ -135,8 +132,6 @@ class CLIObserver:
             print(f"  Tempo: {simulation_data['tempo']:.1f}s")
 
 
-
-
 def executar_simulacao_com_observers(tipo_simulacao):
     """Executa uma simulação com observers para feedback em tempo real"""
     try:
@@ -172,7 +167,7 @@ def executar_simulacao_com_observers(tipo_simulacao):
        
         if criar_animacao in ['s', 'sim', 'y', 'yes']:
             if not ANIMATION_UTILS_AVAILABLE:
-                print("❌ AnimationUtils não disponível. Usando método padrão...")
+                print("AnimationUtils não disponível. Usando método padrão...")
                 simulacao.criar_animacao()
             else:
                 # Perguntar formato
@@ -184,7 +179,7 @@ def executar_simulacao_com_observers(tipo_simulacao):
                 formato_opcao = input("Escolha (1-3): ").strip()
                
                 # Criar animação baseada no tipo
-                print("\n🎬 Criando animação...")
+                print("\nCriando animação...")
                 ani = None
                
                 if tipo_simulacao == "foguete":
@@ -212,7 +207,7 @@ def executar_simulacao_com_observers(tipo_simulacao):
                 # Salvar ou apenas visualizar
                 if ani:
                     if formato_opcao == "1":
-                        print("\n💾 Salvando como GIF...")
+                        print("\nSalvando como GIF...")
                         nome_arquivo = f"{tipo_simulacao}_{time.strftime('%Y%m%d_%H%M%S')}"
                         arquivo_salvo = AnimationUtils.salvar_animacao(
                             ani,
@@ -222,11 +217,11 @@ def executar_simulacao_com_observers(tipo_simulacao):
                             dpi=100
                         )
                         if arquivo_salvo:
-                            print(f"✅ Animação salva em: {arquivo_salvo}")
+                            print(f"Animação salva em: {arquivo_salvo}")
                    
                     elif formato_opcao == "2":
-                        print("\n💾 Salvando como MP4...")
-                        print("⚠️  Certifique-se de que FFmpeg está instalado!")
+                        print("\nSalvando como MP4...")
+                        print("Certifique-se de que FFmpeg está instalado!")
                         nome_arquivo = f"{tipo_simulacao}_{time.strftime('%Y%m%d_%H%M%S')}"
                         arquivo_salvo = AnimationUtils.salvar_animacao(
                             ani,
@@ -236,15 +231,15 @@ def executar_simulacao_com_observers(tipo_simulacao):
                             dpi=100
                         )
                         if arquivo_salvo:
-                            print(f"✅ Animação salva em: {arquivo_salvo}")
+                            print(f"Animação salva em: {arquivo_salvo}")
                         else:
-                            print("❌ Erro ao salvar MP4. Tente GIF em vez disso.")
+                            print("Erro ao salvar MP4. Tente GIF em vez disso.")
                    
                     elif formato_opcao == "3":
-                        print("\n👀 Apenas visualizando (não será salvo)...")
+                        print("\nApenas visualizando (não será salvo)...")
                    
                     # Mostrar animação
-                    print("\n🎥 Exibindo animação...")
+                    print("\nExibindo animação...")
                     plt.show()
        
         # Perguntar sobre salvamento JSON
@@ -253,18 +248,15 @@ def executar_simulacao_com_observers(tipo_simulacao):
         if salvar_json in ['s', 'sim', 'y', 'yes']:
             filename = simulacao.salvar_json()
             if filename:
-                print(f"✅ Dados salvos em: {filename}")
+                print(f"Dados salvos em: {filename}")
        
         return simulacao
    
     except Exception as e:
-        print(f"❌ Erro na execução: {e}")
+        print(f"Erro na execução: {e}")
         import traceback
         traceback.print_exc()
         return None
-
-
-
 
 def main():
     print("\nSISTEMA DE SIMULAÇÃO ESPACIAL COM OBSERVER")
@@ -313,7 +305,7 @@ def main():
             executar_simulacao_com_observers("reentrada")
    
     else:
-        print("❌ Opção inválida.")
+        print("Opção inválida.")
    
     print("\n")
     print("=" * 60)

@@ -15,5 +15,11 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
       SPRING_JPA_SHOW_SQL: "true"
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
-
-# Não precisamos mais de volumes locais pois o banco está na nuvem
+  python-simulator:
+      build: ./simulacao-python
+      container_name: python-simulator
+      ports:
+        - "8000:8000"
+      environment:
+        - PYTHONUNBUFFERED=1
+      restart: unless-stopped

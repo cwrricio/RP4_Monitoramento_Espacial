@@ -8,14 +8,12 @@ from core.orbita import OrbitalSimulation
 from core.reentrada import ReentrySimulation
 from core.enums import TipoSimulacao, Gravidade
 
-
 app = FastAPI(title="Sistema de Simulação de Foguetes", version="1.0.0")
 
 
 class TipoSimulacao(str, Enum):
     FOGUETE = "Foguete"
     OUTRO = "Outro"
-
 
 class SimulacaoRequest(BaseModel):
     descricao: str = "Simulação de Lançamento de Foguete"
@@ -30,7 +28,6 @@ class EmergenciaRequest(BaseModel):
     descricao: str
     gravidade: int = 2  # 1=Baixa, 2=Média, 3=Alta, 4=Critica
 
-
 class SimulacaoResponse(BaseModel):
     id: str
     descricao: str
@@ -39,7 +36,6 @@ class SimulacaoResponse(BaseModel):
     data_execucao: str
     detalhes: dict
 
-
 class EmergenciaResponse(BaseModel):
     evento_id: str
     descricao: str
@@ -47,11 +43,9 @@ class EmergenciaResponse(BaseModel):
     resolvido: bool
     protocolos_ativados: list
 
-
 # Armazenamento em memória (em produção, usar banco de dados)
 simulacoes = {}
 eventos_emergencia = {}
-
 
 @app.post("/simulacoes", response_model=SimulacaoResponse)
 def criar_e_executar_simulacao(request: SimulacaoRequest):
@@ -73,7 +67,6 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
         if hasattr(simulacao, "tipo"):
             simulacao.tipo = request.tipo
 
-
         # Configurar parâmetros específicos do foguete
         if isinstance(simulacao, RocketSimulation):
             simulacao.t_max = request.tempo_maximo
@@ -81,15 +74,13 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
             simulacao.m_propellant = request.massa_combustivel
             simulacao.thrust = request.empuxo
 
-
         # Executar simulação
         simulacao.executarSimulacao()
 
 
-        # ✅ NOVO: Criar animação automaticamente
+        #   Criar animação automaticamente
         if hasattr(simulacao, 'criar_animacao'):
             simulacao.criar_animacao()
-
 
         # Processar resultados
         sucesso = simulacao.processarSimulacao()
@@ -100,7 +91,6 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
         # Armazenar simulação
         simulacao_id = f"sim_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         simulacoes[simulacao_id] = simulacao
-
 
         # Preparar resposta
         return SimulacaoResponse(
@@ -117,10 +107,8 @@ def criar_e_executar_simulacao(request: SimulacaoRequest):
             }  
         )
 
-
     except Exception as e:  
         raise HTTPException(status_code=500, detail=f"Erro na simulação: {str(e)}")  
-
 
 @app.get("/simulacoes/{simulacao_id}", response_model=SimulacaoResponse)  
 def obter_simulacao(simulacao_id: str):  
@@ -131,7 +119,6 @@ def obter_simulacao(simulacao_id: str):
 
     simulacao = simulacoes[simulacao_id]  
 
-
     return SimulacaoResponse(  
         id=simulacao_id,  
         descricao=simulacao.descricao,  
@@ -140,14 +127,12 @@ def obter_simulacao(simulacao_id: str):
         data_execucao=simulacao.dataExecucao.isoformat(),  
         detalhes={})  
 
-
-# ✅ NOVO: Endpoint para gerar animação
+# NOVO: Endpoint para gerar animação
 @app.post("/simulacoes/{simulacao_id}/animacao")
 def gerar_animacao_simulacao(simulacao_id: str):
     """Gera animação para uma simulação específica"""
     if simulacao_id not in simulacoes:
         raise HTTPException(status_code=404, detail="Simulação não encontrada")
-
 
     simulacao = simulacoes[simulacao_id]
 
