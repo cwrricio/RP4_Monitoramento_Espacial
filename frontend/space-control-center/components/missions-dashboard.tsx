@@ -72,7 +72,7 @@ export function MissionsDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard de Missões</h1>
+        <h1 className="text-3xl font-bold tracking-tight" data-testid="dashboard-title">Dashboard de Missões</h1>
         <Button onClick={() => setIsSheetOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Missão
@@ -81,26 +81,24 @@ export function MissionsDashboard() {
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="PLANEJADA">Planejadas</TabsTrigger>
-          <TabsTrigger value="EM_ANDAMENTO">Em Andamento</TabsTrigger>
-          <TabsTrigger value="CONCLUIDA">Concluídas</TabsTrigger>
+          <TabsTrigger value="overview" data-testid="tab-overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="PLANEJADA" data-testid="tab-planejada">Planejadas</TabsTrigger>
+          <TabsTrigger value="EM_ANDAMENTO" data-testid="tab-em-andamento">Em Andamento</TabsTrigger>
+          <TabsTrigger value="CONCLUIDA" data-testid="tab-concluida">Concluídas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           {isLoading ? (
-            <div className="text-center py-10 text-muted-foreground">Carregando...</div>
+            <div className="text-center py-10 text-muted-foreground" data-testid="loading-state">Carregando...</div>
           ) : missions.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">Nenhuma missão encontrada.</div>
+            <div className="text-center py-10 text-muted-foreground" data-testid="empty-state">Nenhuma missão encontrada.</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="missions-grid">
               {missions.map((mission) => (
                 <MissionCard 
                     key={mission.id} 
                     mission={mapToCardProps(mission)}
-                    // AQUI ESTAVA FALTANDO PASSAR A FUNÇÃO:
                     onDelete={handleDeleteMission}
-                    // Passamos a missão original para edição, pois o mapToCardProps perde dados (tripulação)
                     onEdit={() => handleEditMission(mission)} 
                 />
               ))}
@@ -128,7 +126,7 @@ export function MissionsDashboard() {
         open={isSheetOpen} 
         onOpenChange={handleSheetOpenChange}
         onSuccess={fetchMissions}
-        mission={editingMission} // Passa a missão para edição
+        mission={editingMission} 
       />
     </div>
   )

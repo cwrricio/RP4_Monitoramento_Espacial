@@ -102,10 +102,10 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
         <form onSubmit={handleSubmit} className="grid gap-6 py-4">
           <div className="grid gap-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+            <Input id="nome" data-testid="input-astro-name" value={nome} onChange={(e) => setNome(e.target.value)} required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="idade">Idade</Label>
+            <Label htmlFor="idade" data-testid="input-astro-age">Idade</Label>
             {/* CORREÇÃO 2: Limites visuais no input */}
             <Input 
                 id="idade" 
@@ -120,10 +120,10 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
           <div className="grid gap-2">
             <Label>Aptidão</Label>
             <Select value={nivelAptidaoMedica} onValueChange={(v: any) => setNivelAptidaoMedica(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger data-testid="select-aptidao"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALTO">Alto</SelectItem>
-                <SelectItem value="MEDIO">Médio</SelectItem>
+                <SelectItem value="ALTO" data-testid="option-alto">Alto</SelectItem>
+                <SelectItem value="MEDIO" data-testid="option-medio">Médio</SelectItem>
                 <SelectItem value="BAIXO">Baixo</SelectItem>
               </SelectContent>
             </Select>
@@ -140,7 +140,7 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
           </div>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Salvando..." : "Salvar"}</Button>
+            <Button type="submit" disabled={isSubmitting} data-testid="btn-save-astro">{isSubmitting ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

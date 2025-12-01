@@ -49,7 +49,7 @@ export function AstronautsManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Astronautas</h1>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} data-testid="btn-add-astronaut">
           <UserPlus className="mr-2 h-4 w-4" />
           Adicionar Astronauta
         </Button>
