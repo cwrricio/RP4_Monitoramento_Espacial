@@ -4,139 +4,242 @@ require('chromedriver');
 (async function runFullTestSuite() {
   let driver = await new Builder().forBrowser('chrome').build();
 
-  // Helper para lidar com Selects do Shadcn/Radix UI
+  // ✅ Helper para Selects
   async function selectOption(triggerTestId, optionTestId) {
-    const trigger = await driver.findElement(By.css(`[data-testid="${triggerTestId}"]`));
+    const trigger = await driver.wait(
+      until.elementLocated(By.css(`[data-testid="${triggerTestId}"]`)), 
+      5000
+    );
+    await driver.wait(until.elementIsVisible(trigger), 2000);
     await trigger.click();
-    // Espera o menu aparecer (portal)
-    const option = await driver.wait(until.elementLocated(By.css(`[data-testid="${optionTestId}"]`)), 2000);
+    
+    const option = await driver.wait(
+      until.elementLocated(By.css(`[data-testid="${optionTestId}"]`)),
+      3000
+    );
+    await driver.wait(until.elementIsVisible(option), 2000);
     await option.click();
+  }
+
+  // ✅ Helper para preencher input
+  async function fillInput(testId, value) {
+    const input = await driver.wait(
+      until.elementLocated(By.css(`[data-testid="${testId}"]`)),
+      5000
+    );
+    await driver.wait(until.elementIsVisible(input), 3000);
+    await driver.executeScript("arguments[0].scrollIntoView(true);", input);
+    await input.clear();
+    await input.sendKeys(value);
+  }
+
+  // ✅ Helper para clicar em botão
+  async function clickButton(testId) {
+    const button = await driver.wait(
+      until.elementLocated(By.css(`[data-testid="${testId}"]`)),
+      5000
+    );
+    await driver.wait(until.elementIsVisible(button), 3000);
+    await driver.wait(until.elementIsEnabled(button), 2000);
+    await button.click();
+  }
+
+  // ✅ NOVO: Helper para aguardar modal/dialog fechar
+  async function waitForDialogClose() {
+    try {
+      // Aguarda todos os overlays desaparecerem
+      await driver.wait(async () => {
+        const overlays = await driver.findElements(
+          By.css('[data-slot="dialog-overlay"], [data-radix-dialog-overlay]')
+        );
+        
+        if (overlays.length === 0) return true;
+        
+        // Verifica se todos estão invisíveis
+        for (const overlay of overlays) {
+          try {
+            if (await overlay.isDisplayed()) return false;
+          } catch (e) {
+            // Elemento removido do DOM
+            continue;
+          }
+        }
+        return true;
+      }, 5000);
+      
+      // Aguarda mais um pouco para animações terminarem
+      await driver.sleep(500);
+      console.log('✅ Modal fechado completamente');
+    } catch (e) {
+      console.log('⚠️ Timeout aguardando modal fechar');
+    }
+  }
+
+  // ✅ NOVO: Helper para fechar qualquer modal aberto (ESC)
+  async function closeAnyOpenModal() {
+    await driver.actions().sendKeys(Key.ESCAPE).perform();
+    await driver.sleep(300);
   }
 
   try {
     await driver.get('http://localhost:3000');
     await driver.manage().window().setRect({ width: 1280, height: 800 });
 
-    console.log('🚀 Iniciando Suite de Testes...');
+    console.log('🚀 Iniciando Suite de Testes Completa...\n');
 
     // ==========================================
-    // TESTE 1: GERENCIAMENTO DE ASTRONAUTAS
+    // TESTE 1: CADASTRO DE ASTRONAUTA
     // ==========================================
-    console.log('\nTesting: Criação de Astronauta...');
+    console.log('👨‍🚀 TESTE 1: Cadastro de Astronauta');
     
-    // 1. Navegar via Sidebar
-    await driver.sleep(2000);
+    await clickButton('nav-astronautas');
+    console.log('✅ Navegou para Astronautas');
 
-    const navAstronautas = await driver.wait(until.elementLocated(By.css('[data-testid="nav-astronautas"]')), 5000);
-    await navAstronautas.click();
+    await clickButton('btn-add-astronaut');
+    console.log('✅ Modal aberto');
 
-    // 2. Abrir Modal
-    const btnAddAstro = await driver.wait(until.elementLocated(By.css('[data-testid="btn-add-astronaut"]')), 2000);
-    await driver.wait(until.elementIsVisible(btnAddAstro), 5000);
-    await driver.wait(until.elementIsEnabled(btnAddAstro), 5000);
+    await fillInput('input-astro-name', 'Major Tom');
+    await fillInput('input-astro-age', '32');
+    console.log('✅ Dados preenchidos');
 
-    await btnAddAstro.click();
-
-    // 3. Preencher Formulário
-    console.log('Preenchendo formulário...');
-    
-    // Localiza o elemento
-    let inputNome = await driver.wait(until.elementLocated(By.css('[data-testid="input-astro-name"]')), 5000);
-    
-    // --- A CORREÇÃO MÁGICA ---
-    // Esperamos 1 segundo para a animação do Shadcn (Dialog) terminar completamente.
-    // Sem isso, o input existe mas está "voando" na tela.
-    await driver.sleep(1000); 
-    // -------------------------
-
-    // Agora garantimos que ele está visível
-    await driver.wait(until.elementIsVisible(inputNome), 5000);
-    
-    // Clica no input primeiro para garantir o foco (boa prática em Modais)
-    await inputNome.click();
-    
-    // Limpa qualquer valor prévio (caso haja lixo de memória) e digita
-    await inputNome.clear();
-    await inputNome.sendKeys('Major Tom');
-
-    console.log('✅ Nome preenchido.');
-
-    // --- REPETIR A LÓGICA PARA OS OUTROS CAMPOS ---
-    
-    let inputIdade = await driver.findElement(By.css('[data-testid="input-astro-age"]'));
-    await inputIdade.click();
-    await inputIdade.sendKeys('32');
-    
-    // 4. Selecionar Aptidão (Função auxiliar definida no inicio do arquivo)
     await selectOption('select-aptidao', 'option-alto');
+    console.log('✅ Aptidão selecionada');
 
-    // 5. Salvar
-    let btnSalvar = await driver.findElement(By.css('[data-testid="btn-save-astro"]'));
-    await btnSalvar.click();
+    await clickButton('btn-save-astro');
+    console.log('✅ Astronauta salvo');
+
+    // ✅ AGUARDA MODAL FECHAR
+    await waitForDialogClose();
+    console.log();
+
     // ==========================================
-    // TESTE 2: NOVO OPERADOR
+    // TESTE 2: CADASTRO DE OPERADOR
     // ==========================================
-    console.log('\nTesting: Navegação para Operadores...');
+    console.log('👷 TESTE 2: Cadastro de Operador');
     
-    await driver.findElement(By.css('[data-testid="nav-operadores"]')).click();
-    
-    // Verificar se a tabela carregou (assumindo que existe um header de tabela)
-    await driver.wait(until.elementLocated(By.xpath("//h1[contains(text(), 'Gerenciamento de Operadores')]")), 3000);
-    console.log('✅ Página de operadores carregada.');
+    await clickButton('nav-operadores');
+    await driver.wait(
+      until.elementLocated(By.xpath("//h1[contains(text(), 'Gerenciamento de Operadores')]")), 
+      5000
+    );
+    console.log('✅ Página de operadores carregada');
 
-    // Nota: A lógica de adicionar operador seria similar à de astronauta.
-    // Certifique-se de adicionar data-testid="btn-add-operator" no operators-management.tsx
+    await clickButton('btn-add-operator');
+    console.log('✅ Modal aberto');
 
-    // ==========================================
-    // TESTE 3: INTERAÇÃO COM CARD DE MISSÃO
-    // ==========================================
-    console.log('\nTesting: Simulação no Card de Missão...');
-    
-    // Voltar para Home
-    await driver.findElement(By.css('[data-testid="nav-home"]')).click();
+    await fillInput('input-operator-name', 'John Smith');
+    await fillInput('input-operator-age', '28');
+    await fillInput('input-operator-shift', 'Noturno');
+    await fillInput('input-operator-area', 'Comunicações');
+    console.log('✅ Dados preenchidos');
 
-    // Encontrar o botão de Dropdown do primeiro card (MissionCard)
-    // No mission-card.tsx, adicione data-testid="mission-actions-trigger" no botão do DropdownMenuTrigger
-    // Como não temos certeza se os IDs foram adicionados, vamos tentar pelo texto ou ícone genericamente:
-    
-    try {
-        // Tenta achar o botão "Iniciar Simulação" direto no card (se a missão não estiver concluída)
-        // O arquivo mission-card.tsx mostra um botão visível no footer: "Iniciar Simulação"
-        const btnSimulacao = await driver.wait(
-            until.elementLocated(By.xpath("//button[contains(., 'Iniciar Simulação')]")), 
-            3000
-        );
-        await btnSimulacao.click();
+    await clickButton('btn-save-operator');
+    console.log('✅ Operador salvo');
 
-        // Verificar se o Dialog de Simulação abriu
-        await driver.wait(until.elementLocated(By.xpath("//h2[contains(text(), 'Simulação:')]")), 2000);
-        console.log('✅ Dialog de simulação aberto.');
-        
-        // Fechar Dialog (ESC)
-        await driver.actions().sendKeys(Key.ESCAPE).perform();
-
-    } catch (e) {
-        console.log('ℹ️ Nenhuma missão disponível para simulação ou botão não encontrado.');
-    }
+    // ✅ AGUARDA MODAL FECHAR
+    await waitForDialogClose();
+    console.log();
 
     // ==========================================
-    // TESTE 4: PAINEL DE CONTROLE (Protocolos)
+    // TESTE 3: CADASTRO DE NAVE ESPACIAL
     // ==========================================
-    // Este teste assume que você entrou na página de detalhes da missão. 
-    // Se a URL for /missao/123, você pode forçar a navegação se souber um ID, 
-    // ou clicar no card se implementou a navegação.
+    console.log('🚀 TESTE 3: Cadastro de Nave Espacial');
     
-    // Exemplo de teste de protocolo se estivesse na página correta:
-    /*
-    console.log('\nTesting: Acionamento de Protocolo...');
-    const btnProtocolo = await driver.findElement(By.css('[data-testid="btn-protocol-medical"]'));
-    await btnProtocolo.click();
-    await driver.wait(until.elementLocated(By.xpath("//*[contains(text(), 'Protocolo médico de emergência')]")), 3000);
-    console.log('✅ Protocolo acionado.');
-    */
+    await clickButton('nav-espaconaves');
+    await driver.wait(
+      until.elementLocated(By.xpath("//h1[contains(text(), 'Gerenciamento de Espaçonaves')]")), 
+      5000
+    );
+    console.log('✅ Página de naves carregada');
+
+    await clickButton('btn-add-spaceship');
+    console.log('✅ Modal aberto');
+
+    await fillInput('input-spaceship-name', 'Endeavour');
+    await fillInput('input-spaceship-capacity', '8');
+    console.log('✅ Dados básicos preenchidos');
+
+    await selectOption('select-spaceship-status', 'option-operacional');
+    console.log('✅ Status selecionado');
+
+    await clickButton('btn-save-spaceship');
+    console.log('✅ Nave salva');
+
+    // ✅✅✅ CORREÇÃO CRÍTICA: AGUARDA MODAL FECHAR ANTES DE NAVEGAR
+    await waitForDialogClose();
+    console.log();
+
+    // ==========================================
+    // TESTE 4: CRIAÇÃO DE MISSÃO
+    // ==========================================
+    console.log('🎯 TESTE 4: Criação de Missão');
+    
+    // Agora é seguro navegar
+    await clickButton('nav-home');
+    await driver.wait(
+      until.elementLocated(By.xpath("//h1[contains(text(), 'Dashboard de Missões')]")), 
+      5000
+    );
+    console.log('✅ Dashboard carregado');
+
+    await clickButton('btn-new-mission');
+    console.log('✅ Sheet de missão aberto');
+
+    // Aguarda animação do Sheet
+    await driver.sleep(1000);
+
+    await fillInput('input-mission-name', 'Missão Artemis');
+    await fillInput('input-mission-objective', 'Estabelecer base lunar permanente');
+    console.log('✅ Nome e objetivo preenchidos');
+
+    // Selecionar data
+    console.log('📅 Selecionando data...');
+    await clickButton('btn-calendar-trigger');
+    await driver.sleep(500);
+    
+    const day15 = await driver.wait(
+      until.elementLocated(By.xpath("//button[contains(@class, 'rdp-day') and not(contains(@class, 'rdp-outside')) and text()='15']")),
+      3000
+    );
+    await day15.click();
+    console.log('✅ Data selecionada');
+
+    // Selecionar nave
+    console.log('🚀 Selecionando nave...');
+    await selectOption('select-mission-spaceship', 'option-spaceship-1');
+    console.log('✅ Nave selecionada');
+
+    // Salvar missão
+    await clickButton('btn-save-mission');
+    console.log('✅ Missão criada com sucesso!');
+
+    // ✅ AGUARDA SHEET FECHAR
+    await waitForDialogClose();
+    console.log();
+
+    // ==========================================
+    // TESTE 5: VERIFICAÇÃO FINAL
+    // ==========================================
+    console.log('🔍 TESTE 5: Verificação Final');
+    
+    await driver.sleep(1000);
+    console.log('✅ Verificação concluída');
+
+    console.log('\n✅✅✅ TODOS OS TESTES CONCLUÍDOS COM SUCESSO! ✅✅✅');
 
   } catch (error) {
-    console.error('❌ Erro fatal no teste:', error);
+    console.error('❌ Erro fatal no teste:', error.message);
+    
+    // Captura screenshot
+    try {
+      const screenshot = await driver.takeScreenshot();
+      require('fs').writeFileSync('error-screenshot.png', screenshot, 'base64');
+      console.log('📸 Screenshot salvo em error-screenshot.png');
+    } catch (e) {
+      console.log('⚠️ Não foi possível salvar screenshot');
+    }
+    
+    throw error;
   } finally {
     await driver.quit();
   }

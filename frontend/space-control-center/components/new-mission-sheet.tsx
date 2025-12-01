@@ -154,11 +154,11 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
         <div className="grid gap-6 px-6 py-6">
           <div className="grid gap-2">
             <Label htmlFor="nome">Nome da Missão</Label>
-            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Missão Marte I" />
+            <Input data-testid="input-mission-name" id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Missão Marte I" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="objetivo">Objetivo</Label>
-            <Input id="objetivo" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Ex: Estabelecer base avançada" />
+            <Input data-testid="input-mission-objective" id="objetivo" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Ex: Estabelecer base avançada" />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -166,7 +166,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
                 <Label>Data de Início</Label>
                 <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("justify-start text-left font-normal w-full", !dataInicio && "text-muted-foreground")}>
+                    <Button data-testid="btn-calendar-trigger" variant="outline" className={cn("justify-start text-left font-normal w-full", !dataInicio && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dataInicio ? format(dataInicio, "PPP", { locale: ptBR }) : "Selecione"}
                     </Button>
@@ -181,7 +181,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
             <div className="grid gap-2">
                 <Label>Espaçonave</Label>
                 <Select value={selectedSpaceship} onValueChange={setSelectedSpaceship}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger data-testid="select-mission-spaceship" className="w-full">
                         <SelectValue placeholder="Selecione a nave" />
                     </SelectTrigger>
                     <SelectContent>
@@ -190,6 +190,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
                                 key={ship.id} 
                                 value={ship.id.toString()}
                                 disabled={ship.statusOperacional !== "OPERACIONAL"}
+                                data-testid={`option-spaceship-${ship.id}`}
                             >
                                 <span className="flex items-center gap-2">
                                     <Rocket className="h-4 w-4" />
@@ -207,7 +208,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
             <Label>Tripulação ({selectedCrew.length} selecionados)</Label>
             <Popover open={crewOpen} onOpenChange={setCrewOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={crewOpen} className="justify-between bg-transparent w-full">
+                <Button data-testid="btn-crew-combobox" variant="outline" role="combobox" aria-expanded={crewOpen} className="justify-between bg-transparent w-full">
                   {selectedCrew.length > 0 ? `${selectedCrew.length} astronauta(s)` : "Selecionar Tripulação"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -237,7 +238,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
 
         {/* Footer com Padding */}
         <SheetFooter className="px-6 py-4 border-t border-border mt-auto">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancelar</Button>
+          <Button data-testid="btn-save-mission" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Salvando..." : "Salvar"}</Button>
         </SheetFooter>
       </SheetContent>

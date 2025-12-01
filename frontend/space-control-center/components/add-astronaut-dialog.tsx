@@ -105,10 +105,11 @@ export function AddAstronautDialog({ open, onOpenChange, onSuccess, astronaut }:
             <Input id="nome" data-testid="input-astro-name" value={nome} onChange={(e) => setNome(e.target.value)} required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="idade" data-testid="input-astro-age">Idade</Label>
+            <Label htmlFor="idade" >Idade</Label>
             {/* CORREÇÃO 2: Limites visuais no input */}
             <Input 
                 id="idade" 
+                data-testid="input-astro-age"
                 type="number" 
                 min="18" 
                 max="100" 

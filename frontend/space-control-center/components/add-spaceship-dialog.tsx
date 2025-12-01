@@ -88,6 +88,7 @@ export function AddSpaceshipDialog({ open, onOpenChange, spaceship, onSuccess }:
             <Label htmlFor="nome">Nome da Espaçonave</Label>
             <Input
               id="nome"
+              data-testid="input-spaceship-name"
               placeholder="Ex: Apollo 11"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
@@ -98,6 +99,7 @@ export function AddSpaceshipDialog({ open, onOpenChange, spaceship, onSuccess }:
           <div className="space-y-2">
             <Label htmlFor="capacidade">Capacidade da Tripulação</Label>
             <Input
+              data-testid="input-spaceship-capacity"
               id="capacidade"
               type="number"
               min="1"
@@ -121,13 +123,13 @@ export function AddSpaceshipDialog({ open, onOpenChange, spaceship, onSuccess }:
               value={formData.statusOperacional}
               onValueChange={(value: any) => setFormData({ ...formData, statusOperacional: value })}
             >
-              <SelectTrigger id="status">
+              <SelectTrigger id="status" data-testid="select-spaceship-status">
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="OPERACIONAL">Operacional</SelectItem>
-                <SelectItem value="EM_MANUTENCAO">Em Manutenção</SelectItem>
-                <SelectItem value="DESATIVADA">Desativada</SelectItem>
+                <SelectItem value="OPERACIONAL" data-testid="option-operacional">Operacional</SelectItem>
+                <SelectItem value="EM_MANUTENCAO" data-testid="option-manutencao">Em Manutenção</SelectItem>
+                <SelectItem value="DESATIVADA" data-testid="option-desativada">Desativada</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -136,7 +138,7 @@ export function AddSpaceshipDialog({ open, onOpenChange, spaceship, onSuccess }:
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} data-testid="btn-save-spaceship">
               {isLoading ? "Salvando..." : spaceship ? "Atualizar" : "Adicionar"}
             </Button>
           </div>

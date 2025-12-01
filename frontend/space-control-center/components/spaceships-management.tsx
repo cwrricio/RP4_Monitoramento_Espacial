@@ -83,7 +83,8 @@ export function SpaceshipsManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Espaçonaves</h1>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)}
+          data-testid="btn-add-spaceship" >
           <Rocket className="mr-2 h-4 w-4" />
           Adicionar Espaçonave
         </Button>
