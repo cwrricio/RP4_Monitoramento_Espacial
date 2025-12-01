@@ -38,10 +38,25 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
     time: 0,
     acceleration: 0
   })
+  // Máximos e tempo de execução
+  const [maxAltitude, setMaxAltitude] = useState(0)
+  const [maxVelocity, setMaxVelocity] = useState(0)
+  const [executionTime, setExecutionTime] = useState(0)
+  const startTimeRef = useRef<number | null>(null)
 
   const wsRef = useRef<WebSocket | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const simulationIdRef = useRef<string | null>(null)
+  // Render/smoothing refs
+  const latestRenderDataRef = useRef<any | null>(null)
+  const displayedDataRef = useRef<any | null>(null)
+  const emergencySeenRef = useRef<Set<string>>(new Set())
+  const emergenciesRef = useRef<any[]>([])
+  const rafRef = useRef<number | null>(null)
+  const lastRafTimeRef = useRef<number | null>(null)
+  const lastMetricUpdateRef = useRef<number>(0)
+  const SMOOTH_ALPHA = 0.12
+  const METRIC_UPDATE_DEBOUNCE_MS = 1000
 
   // Conectar WebSocket quando o modal abrir
   useEffect(() => {
@@ -158,19 +173,36 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
     if (data.status === 'INICIANDO') {
       setStatus('running')
       addLog(`Simulação iniciada: ${data.message}`, 'info')
+      startTimeRef.current = Date.now()
+      setMaxAltitude(0)
+      setMaxVelocity(0)
     } else if (data.status === 'EXECUTANDO') {
-      setProgress(data.progresso || 0)
-      
-      // Atualizar dados atuais
-      setCurrentData({
-        altitude: data.altitude_atual || 0,
-        velocity: data.velocidade_atual || 0,
-        time: data.tempo_atual || 0,
-        acceleration: data.aceleracao_atual || 0
-      })
+      // Rastrear máximos
+      const altitude = data.altitude_atual || 0
+      const velocity = data.velocidade_atual || 0
+      if (altitude > maxAltitude) setMaxAltitude(altitude)
+      if (velocity > maxVelocity) setMaxVelocity(velocity)
 
-      // Atualizar canvas
-      updateCanvas(data)
+      // Debounce: atualizar métricas/progresso no máximo a cada 200ms
+      const now = Date.now()
+      if (now - lastMetricUpdateRef.current >= METRIC_UPDATE_DEBOUNCE_MS) {
+        setProgress(data.progresso || 0)
+        
+        // Atualizar dados atuais
+        setCurrentData({
+          altitude: altitude,
+          velocity: velocity,
+          time: data.tempo_atual || 0,
+          acceleration: data.aceleracao_atual || 0
+        })
+        
+        lastMetricUpdateRef.current = now
+      }
+
+      // Atualizar alvo de renderização (o loop RAF fará a interpolaçao)
+      // Sempre, sem debounce, para que a animação seja suave
+      latestRenderDataRef.current = data
+      startAnimationLoop()
     } else if (data.status === 'ANIMACAO_INICIADA') {
       addLog('Gerando animação...', 'info')
     } else if (data.status === 'ANIMACAO_CONCLUIDA') {
@@ -178,106 +210,169 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
     }
   }
 
+  
+
   const handleSimulationComplete = (message: any) => {
+    const { data, results } = message
+    // Calcular tempo de execução
+    if (startTimeRef.current) {
+      const elapsed = (Date.now() - startTimeRef.current) / 1000
+      setExecutionTime(elapsed)
+    }
     setStatus('completed')
     setProgress(100)
-    setSimulationData(message.results)
+    setSimulationData(results || data || message)
     addLog('✅ Simulação concluída com sucesso!', 'success')
+
+    if (data) {
+      latestRenderDataRef.current = data
+      displayedDataRef.current = {
+        altitude: data.altitude_atual || 0,
+        velocity: data.velocidade_atual || 0,
+        time: data.tempo_atual || 0,
+        progresso: data.progresso || 0
+      }
+      updateCanvas(data)
+    }
+
+    stopAnimationLoop()
   }
 
   const handleEmergency = (message: any) => {
     const emergency = {
-      type: message.emergency_type,
-      data: message.data,
-      timestamp: message.timestamp
+      type: message.emergency_type || message.type || 'EMERGENCIA',
+      data: message.data || message.payload || {},
+      timestamp: message.timestamp || new Date().toISOString()
     }
 
-    setEmergencies(prev => [...prev, emergency])
-    addLog(`⚠️ EMERGÊNCIA: ${message.emergency_type}`, 'warning')
+    const id = `${emergency.type}-${emergency.timestamp}-${JSON.stringify(emergency.data || {})}`
+    if (emergencySeenRef.current.has(id)) return
+    emergencySeenRef.current.add(id)
+
+    emergenciesRef.current.push(emergency)
+    setEmergencies([...emergenciesRef.current])
+    addLog(`⚠️ EMERGÊNCIA: ${emergency.type}`, 'warning')
   }
 
-  const addLog = (text: string, type: string) => {
+  const addLog = (text: string, type: string = 'info') => {
     const timestamp = new Date().toLocaleTimeString('pt-BR')
-    setLogs(prev => [...prev, { text, type, timestamp }].slice(-20))
+    setLogs(prev => [...prev, { text, type, timestamp }])
   }
 
   const updateCanvas = (data: any) => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     const width = canvas.width
     const height = canvas.height
 
-    // Limpar canvas
     ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, width, height)
 
-    // Desenhar grade
+    // grade
     ctx.strokeStyle = '#1a1a1a'
     ctx.lineWidth = 1
     for (let i = 0; i < width; i += 50) {
-      ctx.beginPath()
-      ctx.moveTo(i, 0)
-      ctx.lineTo(i, height)
-      ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke()
     }
     for (let i = 0; i < height; i += 50) {
-      ctx.beginPath()
-      ctx.moveTo(0, i)
-      ctx.lineTo(width, i)
-      ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke()
     }
 
-    // Desenhar linha central
-    ctx.strokeStyle = '#3b82f6'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(0, height / 2)
-    ctx.lineTo(width, height / 2)
-    ctx.stroke()
+    const disp = displayedDataRef.current || {
+      altitude: data.altitude_atual || 0,
+      velocity: data.velocidade_atual || 0,
+      time: data.tempo_atual || 0,
+      progresso: data.progresso || 0
+    }
 
-    // Desenhar foguete (representação simples)
-    const rocketX = (data.tempo_atual / 600) * width
-    const rocketY = height - (data.altitude_atual / 400000) * height
-    
+    const maxTime = data.tempo_maximo || 600
+    const rocketX = Math.min(width, (disp.time / maxTime) * width)
+    const rocketY = height - Math.min(height, (disp.altitude / 400000) * height)
+
     ctx.fillStyle = '#3b82f6'
-    ctx.beginPath()
-    ctx.arc(rocketX, rocketY, 8, 0, Math.PI * 2)
-    ctx.fill()
+    ctx.beginPath(); ctx.arc(rocketX, rocketY, 8, 0, Math.PI * 2); ctx.fill()
 
-    // Desenhar trilha
     ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)'
     ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(0, height)
-    ctx.lineTo(rocketX, rocketY)
-    ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(0, height); ctx.lineTo(rocketX, rocketY); ctx.stroke()
 
-    // Desenhar informações
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 16px monospace'
     ctx.fillText(`TELEMETRIA EM TEMPO REAL`, 20, 30)
-    
+
     ctx.font = '14px monospace'
     ctx.fillStyle = '#3b82f6'
-    ctx.fillText(`Altitude: ${(data.altitude_atual || 0).toFixed(0)} m`, 20, 60)
-    ctx.fillText(`Velocidade: ${(data.velocidade_atual || 0).toFixed(0)} m/s`, 20, 85)
-    ctx.fillText(`Tempo: ${(data.tempo_atual || 0).toFixed(1)} s`, 20, 110)
-    
-    if (data.aceleracao_atual) {
-      ctx.fillText(`Aceleração: ${(data.aceleracao_atual).toFixed(2)} m/s²`, 20, 135)
-    }
+    ctx.fillText(`Altitude: ${(disp.altitude || 0).toFixed(0)} m`, 20, 60)
+    ctx.fillText(`Velocidade: ${(disp.velocity || 0).toFixed(0)} m/s`, 20, 85)
+    ctx.fillText(`Tempo: ${(disp.time || 0).toFixed(1)} s`, 20, 110)
 
-    // Barra de progresso visual
-    const progressHeight = (data.progresso / 100) * height
+    const progressHeight = (disp.progresso / 100) * height
     ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'
     ctx.fillRect(width - 50, height - progressHeight, 40, progressHeight)
-    
     ctx.fillStyle = '#3b82f6'
     ctx.fillRect(width - 50, height - progressHeight, 40, 4)
+
+    const lastEmerg = emergenciesRef.current[emergenciesRef.current.length - 1]
+    if (lastEmerg && /VELOCIDADE_CRITICA|FALHA_ORBITAL|TEMPERATURA_ALTA/i.test(lastEmerg.type)) {
+      const now = Date.now()
+      const emergTime = new Date(lastEmerg.timestamp).getTime()
+      if (now - emergTime < 30_000) {
+        const gradient = ctx.createRadialGradient(rocketX, rocketY, 0, rocketX, rocketY, 60)
+        gradient.addColorStop(0, 'rgba(255,200,0,0.95)')
+        gradient.addColorStop(0.4, 'rgba(255,80,0,0.9)')
+        gradient.addColorStop(1, 'rgba(120,0,0,0.0)')
+        ctx.fillStyle = gradient
+        ctx.beginPath(); ctx.arc(rocketX, rocketY, 60, 0, Math.PI * 2); ctx.fill()
+      }
+    }
+  }
+
+  const loop = (timestamp: number) => {
+    if (!lastRafTimeRef.current) lastRafTimeRef.current = timestamp
+    const dt = Math.min(0.1, (timestamp - (lastRafTimeRef.current || timestamp)) / 1000)
+    lastRafTimeRef.current = timestamp
+
+    const target = latestRenderDataRef.current
+    if (target) {
+      let disp = displayedDataRef.current
+      if (!disp) {
+        disp = {
+          altitude: target.altitude_atual || 0,
+          velocity: target.velocidade_atual || 0,
+          time: target.tempo_atual || 0,
+          progresso: target.progresso || 0
+        }
+        displayedDataRef.current = disp
+      }
+
+      const lerpFactor = 1 - Math.pow(1 - SMOOTH_ALPHA, dt * 60)
+      disp.altitude += ((target.altitude_atual || 0) - disp.altitude) * lerpFactor
+      disp.velocity += ((target.velocidade_atual || 0) - disp.velocity) * lerpFactor
+      disp.time += ((target.tempo_atual || 0) - disp.time) * lerpFactor
+      disp.progresso += ((target.progresso || 0) - disp.progresso) * lerpFactor
+
+      updateCanvas(target)
+    }
+
+    rafRef.current = requestAnimationFrame(loop)
+  }
+
+  const startAnimationLoop = () => {
+    if (!rafRef.current) {
+      lastRafTimeRef.current = null
+      rafRef.current = requestAnimationFrame(loop)
+    }
+  }
+
+  const stopAnimationLoop = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+      lastRafTimeRef.current = null
+    }
   }
 
   const determineSimulationType = (missionName: string): 'foguete' | 'orbita' | 'reentrada' => {
@@ -356,12 +451,31 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
     setEmergencies([])
     setSimulationData(null)
     setCurrentData({ altitude: 0, velocity: 0, time: 0, acceleration: 0 })
+    setMaxAltitude(0)
+    setMaxVelocity(0)
+    setExecutionTime(0)
     simulationIdRef.current = null
+    startTimeRef.current = null
+    // limpar refs de render/emerências
+    displayedDataRef.current = null
+    latestRenderDataRef.current = null
+    emergencySeenRef.current.clear()
+    emergenciesRef.current = []
+    lastMetricUpdateRef.current = 0
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      // limpar estado interno ao fechar para garantir que o botão
+      // volte ao estado inicial quando reabrir em outra tela
+      resetSimulation()
+    }
+    onClose()
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -376,16 +490,16 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
           </div>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 max-h-[calc(95vh-180px)] overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 overflow-y-auto flex-1">
           {/* Coluna Principal - Visualização */}
           <div className="lg:col-span-2 space-y-4">
             {/* Canvas de Visualização */}
-            <div className="bg-black rounded-lg border border-zinc-800 overflow-hidden relative">
+            <div className="bg-black rounded-lg border border-zinc-800 overflow-hidden relative flex-1">
               <canvas
                 ref={canvasRef}
-                width={900}
-                height={450}
-                className="w-full"
+                width={1600}
+                height={500}
+                className="w-full h-full"
               />
               
               {/* Overlay de Status */}
@@ -402,56 +516,78 @@ export function SimulationModal({ mission, isOpen, onClose }: SimulationModalPro
             </div>
 
             {/* Métricas em Tempo Real */}
-            {status === 'running' && (
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-                    <Gauge className="w-4 h-4" />
-                    <span>Altitude</span>
+            {(status === 'running' || status === 'completed') && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-6 gap-3">
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Gauge className="w-3 h-3" />
+                      <span>Altitude</span>
+                    </div>
+                    <p className="text-lg font-bold text-blue-500">
+                      {(currentData.altitude / 1000).toFixed(1)} km
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-blue-500">
-                    {(currentData.altitude / 1000).toFixed(1)} km
-                  </p>
-                </div>
-                
-                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-                    <Zap className="w-4 h-4" />
-                    <span>Velocidade</span>
+                  
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Rocket className="w-3 h-3" />
+                      <span>Altitude Máx</span>
+                    </div>
+                    <p className="text-lg font-bold text-blue-600">
+                      {(maxAltitude / 1000).toFixed(1)} km
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-green-500">
-                    {(currentData.velocity).toFixed(0)} m/s
-                  </p>
-                </div>
-                
-                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-                    <Activity className="w-4 h-4" />
-                    <span>Tempo</span>
+                  
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Zap className="w-3 h-3" />
+                      <span>Velocidade</span>
+                    </div>
+                    <p className="text-lg font-bold text-green-500">
+                      {(currentData.velocity).toFixed(0)} m/s
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-purple-500">
-                    {currentData.time.toFixed(1)} s
-                  </p>
-                </div>
-                
-                <div className="bg-zinc-900 rounded-lg p-4 border border-zinc-800">
-                  <div className="flex items-center gap-2 text-zinc-400 text-sm mb-1">
-                    <Activity className="w-4 h-4" />
-                    <span>Progresso</span>
+                  
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Zap className="w-3 h-3" />
+                      <span>Veloc. Máx</span>
+                    </div>
+                    <p className="text-lg font-bold text-green-600">
+                      {(maxVelocity).toFixed(0)} m/s
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-500">
-                    {progress.toFixed(0)}%
-                  </p>
+                  
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Activity className="w-3 h-3" />
+                      <span>Tempo Sim</span>
+                    </div>
+                    <p className="text-lg font-bold text-purple-500">
+                      {currentData.time.toFixed(1)} s
+                    </p>
+                  </div>
+                  
+                  <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800">
+                    <div className="flex items-center gap-1 text-zinc-400 text-xs mb-1">
+                      <Activity className="w-3 h-3" />
+                      <span>Exec. Real</span>
+                    </div>
+                    <p className="text-lg font-bold text-yellow-500">
+                      {executionTime.toFixed(2)} s
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Barra de Progresso */}
-            {status === 'running' && (
+            {(status === 'running' || status === 'completed') && (
               <div className="space-y-2">
                 <Progress value={progress} className="h-2" />
                 <p className="text-sm text-zinc-400 text-center">
-                  Simulação em andamento...
+                  {status === 'running' ? 'Simulação em andamento...' : 'Simulação concluída'}
                 </p>
               </div>
             )}

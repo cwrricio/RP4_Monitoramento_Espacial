@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { MoreVertical, Play, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { SimulationModal } from "@/components/ui/SimulationModal"
 
 type MissionStatus = "Planejada" | "Em Andamento" | "Concluída"
 
@@ -26,8 +25,14 @@ const statusConfig: Record<MissionStatus, { variant: "default" | "secondary" | "
 }
 
 export function MissionCard({ mission }: { mission: Mission }) {
-  const [isSimulationOpen, setIsSimulationOpen] = useState(false)
+  const router = useRouter()
   const statusStyle = statusConfig[mission.status]
+
+  const handleNavigateToSimulation = () => {
+    router.push(
+      `/simulacao/${mission.id}?name=${encodeURIComponent(mission.name)}&destination=${encodeURIComponent(mission.destination)}&date=${encodeURIComponent(mission.launchDate)}&description=${encodeURIComponent(mission.description)}`
+    )
+  }
 
   return (
     <>
@@ -46,7 +51,7 @@ export function MissionCard({ mission }: { mission: Mission }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>Editar</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsSimulationOpen(true)}>
+                <DropdownMenuItem onClick={handleNavigateToSimulation}>
                   Ver Simulação
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
@@ -67,7 +72,7 @@ export function MissionCard({ mission }: { mission: Mission }) {
         <CardFooter>
           <Button 
             className="w-full" 
-            onClick={() => setIsSimulationOpen(true)}
+            onClick={handleNavigateToSimulation}
             disabled={mission.status === "Concluída"}
           >
             <Play className="mr-2 h-4 w-4" />
@@ -75,13 +80,6 @@ export function MissionCard({ mission }: { mission: Mission }) {
           </Button>
         </CardFooter>
       </Card>
-
-      {/* Modal de Simulação em Tempo Real com Backend Python */}
-      <SimulationModal
-        mission={mission}
-        isOpen={isSimulationOpen}
-        onClose={() => setIsSimulationOpen(false)}
-      />
     </>
- )
+  )
 }
