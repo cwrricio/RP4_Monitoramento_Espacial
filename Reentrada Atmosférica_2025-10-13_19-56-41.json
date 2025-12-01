@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "tipo": "Reentrada Atmosférica",
+    "descricao": "Simulação de Reentrada Atmosférica",
+    "data_execucao": "2025-10-13 19:56:41",
+    "classe": "ReentrySimulation"
+  },
+  "parametros_principais": {
+    "descricao": "Simulação de Reentrada Atmosférica",
+    "tipo": "TipoSimulacao.REENTRADA",
+    "h0": 120000,
+    "v0": -7500,
+    "cd": 1.5,
+    "area": 15,
+    "m": 5000,
+    "rho0": 1.225,
+    "H": 8500,
+    "g": 9.81,
+    "dt": 0.1
+  },
+  "resultados_resumidos": {
+    "altitude_maxima": 119249.90304610635,
+    "tempo_total": 192.29999999999336,
+    "velocidade_maxima": 7538.768069204826
+  },
+  "estatisticas": {
+    "altitude": {
+      "max": 119249.90304610635,
+      "min": -5.786634602969889,
+      "media": 11880.987680597109,
+      "pontos": 1923
+    },
+    "velocidade": {
+      "max": 7538.768069204826,
+      "min": 60.29953390457073,
+      "media": 624.0550527020439
+    }
+  }
+}

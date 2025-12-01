@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "tipo": "Satélite em Órbita",
+    "descricao": "Simulação de Satélite em Órbita",
+    "data_execucao": "2025-10-13 19:56:28",
+    "classe": "OrbitalSimulation"
+  },
+  "parametros_principais": {
+    "descricao": "Simulação de Satélite em Órbita",
+    "tipo": "TipoSimulacao.ORBITA",
+    "G": 6.6743e-11,
+    "M": 5.9722e+24,
+    "R": 6371000.0,
+    "h": 400000,
+    "dt": 5,
+    "t_max": 6000
+  },
+  "resultados_resumidos": {},
+  "estatisticas": {}
+}
