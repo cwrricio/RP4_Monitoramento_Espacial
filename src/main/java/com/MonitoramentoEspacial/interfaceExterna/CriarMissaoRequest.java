@@ -18,6 +18,7 @@ public class CriarMissaoRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dataInicio;
 
+    private String tipoSimulacao;
     private List<Long> tripulacaoIds;
     private Long espaconaveId;
     public Long getEspaconaveId() { return espaconaveId; }
@@ -34,6 +35,9 @@ public class CriarMissaoRequest {
 
     public LocalDate getDataInicio() { return dataInicio; }
     public void setDataInicio(LocalDate dataInicio) { this.dataInicio = dataInicio; }
+
+    public String getTipoSimulacao() { return tipoSimulacao; }
+    public void setTipoSimulacao(String tipoSimulacao) { this.tipoSimulacao = tipoSimulacao; }
 
     public List<Long> getTripulacaoIds() { return tripulacaoIds; }
     public void setTripulacaoIds(List<Long> tripulacaoIds) { this.tripulacaoIds = tripulacaoIds; }

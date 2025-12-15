@@ -4,6 +4,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List, Dict, Any
+import asyncio
 from .observers import SimulationObserver, EmergencyObserver
 from .enums import TipoSimulacao
 
@@ -48,19 +49,60 @@ class Simulacao(ABC):
     def notify_simulation_update(self, data: Dict[str, Any]):
         """Notifica observers sobre atualização da simulação"""
         for observer in self._simulation_observers:
-            observer.on_simulation_update(self.tipo, data)
+            if asyncio.iscoroutinefunction(observer.on_simulation_update):
+                try:
+                    asyncio.create_task(observer.on_simulation_update(self.tipo, data))
+                except RuntimeError:
+                    # Se não há event loop, executar de forma síncrona com run_in_executor
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(observer.on_simulation_update(self.tipo, data))
+                        else:
+                            loop.run_until_complete(observer.on_simulation_update(self.tipo, data))
+                    except:
+                        # Fallback: apenas chamar o método
+                        pass
+            else:
+                observer.on_simulation_update(self.tipo, data)
 
 
     def notify_simulation_complete(self, results: Dict[str, Any]):
         """Notifica observers sobre conclusão da simulação"""
         for observer in self._simulation_observers:
-            observer.on_simulation_complete(self.tipo, results)
+            if asyncio.iscoroutinefunction(observer.on_simulation_complete):
+                try:
+                    asyncio.create_task(observer.on_simulation_complete(self.tipo, results))
+                except RuntimeError:
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(observer.on_simulation_complete(self.tipo, results))
+                        else:
+                            loop.run_until_complete(observer.on_simulation_complete(self.tipo, results))
+                    except:
+                        pass
+            else:
+                observer.on_simulation_complete(self.tipo, results)
 
 
     def notify_emergency(self, emergency_type: str, simulation_data: Dict[str, Any]):
         """Notifica observers sobre emergências"""
         for observer in self._emergency_observers:
-            observer.on_emergency_detected(emergency_type, simulation_data)
+            if asyncio.iscoroutinefunction(observer.on_emergency_detected):
+                try:
+                    asyncio.create_task(observer.on_emergency_detected(emergency_type, simulation_data))
+                except RuntimeError:
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(observer.on_emergency_detected(emergency_type, simulation_data))
+                        else:
+                            loop.run_until_complete(observer.on_emergency_detected(emergency_type, simulation_data))
+                    except:
+                        pass
+            else:
+                observer.on_emergency_detected(emergency_type, simulation_data)
 
 
     # Métodos abstratos originais (mantidos intactos)

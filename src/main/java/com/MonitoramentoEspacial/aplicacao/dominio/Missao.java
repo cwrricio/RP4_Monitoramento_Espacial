@@ -27,6 +27,9 @@ public class Missao {
     @Column(nullable = false)
     private StatusMissao status;
 
+    @Column(length = 50)
+    private String tipoSimulacao;
+
     // --- RELACIONAMENTOS (EXISTENTES E NOVOS) ---
 
     @ManyToMany
@@ -204,6 +207,8 @@ public class Missao {
     public void setDataFim(LocalDate dataFim) { this.dataFim = dataFim; }
     public StatusMissao getStatus() { return status; }
     public void setStatus(StatusMissao status) { this.status = status; }
+    public String getTipoSimulacao() { return tipoSimulacao; }
+    public void setTipoSimulacao(String tipoSimulacao) { this.tipoSimulacao = tipoSimulacao; }
     public List<Astronauta> getTripulacao() { return tripulacao; }
     public void setTripulacao(List<Astronauta> tripulacao) { this.tripulacao = tripulacao; }
     

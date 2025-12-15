@@ -35,6 +35,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
   const [nome, setNome] = useState("")
   const [objetivo, setObjetivo] = useState("")
   const [dataInicio, setDataInicio] = useState<Date>()
+  const [tipoSimulacao, setTipoSimulacao] = useState("foguete") // NOVO: Default foguete
   
   // Estados da Tripulação
   const [crewOpen, setCrewOpen] = useState(false)
@@ -67,6 +68,7 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
     if (mission && open) {
         setNome(mission.nome)
         setObjetivo(mission.objetivo)
+        setTipoSimulacao(mission.tipoSimulacao || "foguete")
         if (mission.dataInicio) {
             const [ano, mes, dia] = mission.dataInicio.split('-').map(Number);
             setDataInicio(new Date(ano, mes - 1, dia)); 
@@ -85,7 +87,8 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
         setObjetivo("")
         setDataInicio(undefined)
         setSelectedCrew([])
-        setSelectedSpaceship("") // Limpa nave
+        setSelectedSpaceship("")
+        setTipoSimulacao("foguete")
     }
   }, [mission, open])
 
@@ -112,11 +115,12 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
       const dataFormatada = format(dataInicio, "yyyy-MM-dd")
       const tripulacaoNumerica = selectedCrew.map((id) => Number(id))
 
-      // Payload com espaçonave
+      // Payload com espaçonave e tipoSimulacao
       const payload = {
         nome,
         objetivo,
         dataInicio: dataFormatada,
+        tipoSimulacao,
         tripulacaoIds: tripulacaoNumerica,
         espaconaveId: Number(selectedSpaceship) // <--- ENVIO DO ID
       }
@@ -159,6 +163,20 @@ export function NewMissionSheet({ open, onOpenChange, onSuccess, mission }: NewM
           <div className="grid gap-2">
             <Label htmlFor="objetivo">Objetivo</Label>
             <Input data-testid="input-mission-objective" id="objetivo" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Ex: Estabelecer base avançada" />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Tipo de Simulação</Label>
+            <Select value={tipoSimulacao} onValueChange={setTipoSimulacao}>
+              <SelectTrigger data-testid="select-simulation-type" className="w-full">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="foguete">Foguete - Lançamento</SelectItem>
+                <SelectItem value="orbita">Órbita - Orbital</SelectItem>
+                <SelectItem value="reentrada">Reentrada - Atmosférica</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">

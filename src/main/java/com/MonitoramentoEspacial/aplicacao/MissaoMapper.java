@@ -48,7 +48,8 @@ public class MissaoMapper {
                 missao.getDataFim(),
                 missao.getStatus(),
                 tripulacaoDTOs,
-                espaconaveDTO // Passa a nave convertida
+                espaconaveDTO, // Passa a nave convertida
+                missao.getTipoSimulacao()
         );
     }
 
@@ -59,6 +60,7 @@ public class MissaoMapper {
         missao.setNome(request.getNome());
         missao.setObjetivo(request.getObjetivo());
         missao.setDataInicio(request.getDataInicio());
+        missao.setTipoSimulacao(request.getTipoSimulacao());
         missao.setStatus(StatusMissao.PLANEJADA);
         
         // Espaçonave e Tripulação são tratadas no Service (pelo ID)
