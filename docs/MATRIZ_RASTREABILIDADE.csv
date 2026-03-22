@@ -1,0 +1,29 @@
+Tipo,ID,Descricao,Prioridade,Status,UC_Relacionados,Artefatos_Principais
+RF,RF01,Planejamento e Controle de Missões Espaciais,Essencial,Implementado,"UC-01, UC-02","MissaoController, MissaoService, Missao"
+RF,RF02,Monitoramento em Tempo Real,Essencial,Parcial,"UC-02, UC-04","Evento, DadosBiometricos, listarEventos"
+RF,RF06,Gestão de Pessoal,Essencial,Implementado,UC-10,"AstronautaController, OperadorDeMissaoController"
+RF,RF07,Monitoramento em Missões (dados fisiológicos),Essencial,Parcial,UC-04,"DadosBiometricos, AstronautaService"
+RF,RF13,Resposta a Emergências,Essencial,Implementado,"UC-03, UC-09, UC-11, UC-12","ProtocoloEmergencial, acionarProtocolo"
+RF,RF04,Simulações e Previsão de Falhas,Importante,Parcial,"UC-05, UC-12","Simulacao, iniciarSimulacao"
+RF,RF11,Monitoramento de Ameaças Espaciais,Importante,Implementado,UC-07,"AmeacaController, AmeacaService"
+RF,RF12,Interoperabilidade Internacional,Importante,Não Implementado,UC-08,Nenhum
+RF,RF03-B,Integração com Observatórios e Telescópios,Desejável,Não Implementado,UC-06,Nenhum
+NF,NF01,Segurança Cibernética Avançada,Essencial,Parcial,N/A,"Spring Boot padrão"
+NF,NF02,Confiabilidade e Integridade,Essencial,Implementado,N/A,"JPA, RestExceptionHandler, @Transactional"
+NF,NF03,Desempenho e Baixa Latência,Essencial,Parcial,N/A,"Spring Boot, FetchType.LAZY"
+NF,NF04,Armazenamento de Grandes Volumes,Essencial,Parcial,N/A,"PostgreSQL, JPA"
+NF,NF05,Alta Disponibilidade e Redundância,Importante,Não Implementado,N/A,Nenhum
+NF,NF06,Escalabilidade,Importante,Parcial,N/A,"Docker, Spring Boot"
+NF,NF07,Backup e Recuperação de Desastres,Desejável,Não Implementado,N/A,Nenhum
+UC,UC-01,Planejar missão espacial,,Implementado,,MissaoController.criar
+UC,UC-02,Monitorar missão,,Implementado,,MissaoController.listarEventos
+UC,UC-03,Ativar protocolo de emergência,,Implementado,,MissaoController.acionarProtocolo
+UC,UC-04,Monitorar dados de astronautas,,Parcial,,AstronautaController
+UC,UC-05,Executar simulação de missão,,Parcial,,iniciarSimulacao
+UC,UC-06,Integrar dados de observatórios,,Não Implementado,,Nenhum
+UC,UC-07,Monitorar ameaças,,Implementado,,AmeacaController
+UC,UC-08,Compartilhar dados com agências,,Não Implementado,,Nenhum
+UC,UC-09,Emitir alerta,,Parcial,,AmeacaService (Evento ALERTA)
+UC,UC-10,Gerenciar pessoal,,Implementado,,AstronautaController, OperadorDeMissaoController
+UC,UC-11,Ação de emergência (operador inoperante),,Não Implementado,,Nenhum
+UC,UC-12,Executar simulação de contingência,,Parcial,,Simulacao
