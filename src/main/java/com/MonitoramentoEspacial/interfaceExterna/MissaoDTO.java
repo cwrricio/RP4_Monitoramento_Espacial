@@ -19,13 +19,14 @@ public class MissaoDTO {
 
     private StatusMissao status;
     private List<AstronautaDTO> tripulacao;
+    private String tipoSimulacao;
     
     // CAMPO ADICIONADO
     private EspaconaveDTO espaconave; 
 
     public MissaoDTO() {}
 
-    public MissaoDTO(Long id, String nome, String objetivo, LocalDate dataInicio, LocalDate dataFim, StatusMissao status, List<AstronautaDTO> tripulacao, EspaconaveDTO espaconave) {
+    public MissaoDTO(Long id, String nome, String objetivo, LocalDate dataInicio, LocalDate dataFim, StatusMissao status, List<AstronautaDTO> tripulacao, EspaconaveDTO espaconave, String tipoSimulacao) {
         this.id = id;
         this.nome = nome;
         this.objetivo = objetivo;
@@ -34,6 +35,7 @@ public class MissaoDTO {
         this.status = status;
         this.tripulacao = tripulacao;
         this.espaconave = espaconave;
+        this.tipoSimulacao = tipoSimulacao;
     }
 
     // Getters e Setters
@@ -54,4 +56,7 @@ public class MissaoDTO {
     
     public EspaconaveDTO getEspaconave() { return espaconave; }
     public void setEspaconave(EspaconaveDTO espaconave) { this.espaconave = espaconave; }
+    
+    public String getTipoSimulacao() { return tipoSimulacao; }
+    public void setTipoSimulacao(String tipoSimulacao) { this.tipoSimulacao = tipoSimulacao; }
 }

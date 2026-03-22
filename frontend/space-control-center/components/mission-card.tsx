@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { SimulationFullscreen } from "@/components/SimulationFullscreen"
 
 interface Mission {
   id: string
@@ -79,11 +80,11 @@ export function MissionCard({ mission, onDelete, onEdit }: MissionCardProps) {
       </Card>
 
       <Dialog open={isSimulationOpen} onOpenChange={setIsSimulationOpen}>
-        <DialogContent className="max-w-4xl">
-            <DialogHeader><DialogTitle>Simulação: {mission.name}</DialogTitle></DialogHeader>
-            <div className="flex justify-center bg-black/5 rounded-lg p-4 h-64 items-center">
-                <p className="text-muted-foreground">Visualização da simulação em Python...</p>
-            </div>
+        <DialogContent className="max-w-full max-h-full w-screen h-screen p-0 border-0 bg-black overflow-hidden" style={{width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none'}}>
+            <DialogHeader className="sr-only">
+              <DialogTitle>Simulação: {mission.name}</DialogTitle>
+            </DialogHeader>
+            <SimulationFullscreen mission={mission} />
         </DialogContent>
       </Dialog>
     </>
